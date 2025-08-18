@@ -111,6 +111,15 @@ const VoiceAssistant = () => {
     const lowerMsg = msg.trim().toLowerCase();
     setChatHistory(prev => [...prev, { type: 'user', text: msg }]);
 
+    // Handle clear commands first
+    if (lowerMsg === '/cls' || lowerMsg === '/clear') {
+      setChatHistory([]);
+      if (!fromInput) speak('Chat history cleared.');
+      setGoogleSearchQuery('');
+      setShowGoogleButton(false);
+      return;
+    }
+
     // Always fetch data from API before processing the command
     let latestData = [];
     try {
@@ -493,8 +502,11 @@ const VoiceAssistant = () => {
       {/* Chat History */}
       <div className="flex flex-col gap-2 overflow-y-auto h-full mb-4 scroll-smooth relative">
         {chatHistory.length === 0 && (
-          <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/80 z-20 rounded-lg">
-            <span className="text-white text-lg font-semibold">No messages yet. Start a conversation!</span>
+          <div className="absolute inset-0 text-white flex items-center justify-center bg-transparent z-20 rounded-2xl">
+            <div className='w-full h-full bg-zinc-700/10 border border-zinc-700/30 rounded-2xl p-2 flex flex-col items-start justify-start gap-2'>
+              <p className='px-5 py-1 rounded-md border border-zinc-700/50 text-zinc-400 '>sir I have {data.length} data</p>
+              <p className='px-5 py-1 rounded-md border border-zinc-700/50 text-zinc-400 '>But you still not chating! 🥺</p>
+            </div>
           </div>
         )}
         {chatHistory.length > 0 && chatHistory.map((chat, index) => (
@@ -565,9 +577,9 @@ const VoiceAssistant = () => {
 
       {/* Category List */}
       {showCategory && categories.length > 0 && (
-        <div className="mb-2 w-full max-w-full rounded-xl overflow-hidden border border-zinc-700 bg-zinc-900 shadow-lg z-10">
+        <div className="mb-2 w-full pb-4 h-fit max-w-full rounded-xl overflow-hidden border border-zinc-700 bg-zinc-900 shadow-lg z-50">
           <div className="p-3">
-            <div className="mb-2 text-cyan-300 font-semibold text-sm">Categories</div>
+            <div className="mb-2 text-cyan-300 font-semibold text-sm">I have {categories.length} Categories</div>
             <div className="flex flex-wrap gap-2">
               {categories.map((cat, idx) => (
                 <button
@@ -656,7 +668,7 @@ const VoiceAssistant = () => {
         </div>
         <button
           type="submit"
-          className="bg-zinc-800 border border-zinc-100/30 text-white size-12 flex items-center justify-center rounded-md hover:bg-blue-700 transition"
+          className="bg-zinc-800 border border-zinc-100/30 text-white size-12 flex items-center justify-center rounded-md hover:bg-blue-700 cursor-pointer transition"
         >
           <i className="ri-send-plane-fill text-2xl"></i>
         </button>
