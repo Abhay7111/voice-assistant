@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import Markdown from 'react-markdown';
+import { NavLink } from 'react-router';
 
 // Utility: Convert Markdown to plain text for speech
 function markdownToSpeechText(markdown) {
@@ -506,6 +507,7 @@ const VoiceAssistant = () => {
             <div className='w-full h-full bg-zinc-700/10 border border-zinc-700/30 rounded-2xl p-2 flex flex-col items-start justify-start gap-2'>
               <p className='px-5 py-1 rounded-md border border-zinc-700/50 text-zinc-400 '>sir I have {data.length} data</p>
               <p className='px-5 py-1 rounded-md border border-zinc-700/50 text-zinc-400 '>But you still not chating! 🥺</p>
+              <p className='px-5 py-1 rounded-md border border-zinc-700/50 text-zinc-400 '>I need more data! Please <NavLink to={'/train'} className={` text-blue-400 hover:underline`}>Train</NavLink> me</p>
             </div>
           </div>
         )}
