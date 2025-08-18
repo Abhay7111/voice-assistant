@@ -1,0 +1,252 @@
+@import "tailwindcss";
+
+@import "tailwindcss";
+
+*{
+     font-family:  'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+}
+
+html, body, #root{
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    background-color: #27272a;
+}
+
+::-webkit-scrollbar {
+    display: none;
+}
+
+.heightminus{
+    height: calc(100dvh - 68px);
+}
+
+.animatebgl{
+    animation: animatebgl 60s linear infinite;
+}
+
+@keyframes animatebgl {
+    0%, 100%{
+        top: 0px;
+       }
+    20%{
+        top: 200px;
+        left: 30%;
+    }
+    40%{
+        top: 0px;
+        left: 90%;
+    }
+    60%{
+        top: -50px;
+        left: 30%;
+    }
+    80%{
+        top: -100px;
+        left: 10%;
+    }
+    
+}
+.animatebgr{
+    animation: animatebgr 45s linear infinite;
+}
+
+@keyframes animatebgr {
+    0%, 100%{
+        top: 0px;
+       }
+    20%{
+        top: 200px;
+        right: 30%;
+    }
+    40%{
+        top: 0px;
+        right: 90%;
+    }
+    60%{
+        top: -50px;
+        right: 30%;
+    }
+    80%{
+        top: -100px;
+        right: 10%;
+    }
+    
+}
+
+.scrollhide ::-webkit-scrollbar{
+    display: none;
+}
+
+
+/* Base Styles */
+.markdown {
+    font-family: 'Arial', sans-serif;
+    line-height: 1.6;
+    color: #e4e4e7; /* Light text color for contrast */
+    margin: 0 auto;
+    max-width: 800px;
+  }
+  
+  /* Headings */
+  .markdown h1 {
+    font-size: 2.5em;
+    color: #ffffff;  /* White text */
+    margin-bottom: 0.5em;
+  }
+  
+  .markdown h2 {
+    font-size: 2em;
+    color: #dddddd;
+    margin-bottom: 0.5em;
+  }
+  
+  .markdown h3 {
+    font-size: 1.75em;
+    color: #cccccc;
+    margin-bottom: 0.5em;
+  }
+  
+  .markdown h4 {
+    font-size: 1.5em;
+    color: #bbbbbb;
+    margin-bottom: 0.5em;
+  }
+  
+  .markdown h5 {
+    font-size: 1.25em;
+    color: #aaaaaa;
+    margin-bottom: 0.5em;
+  }
+  
+  .markdown h6 {
+    font-size: 1em;
+    color: #999999;
+    margin-bottom: 0.5em;
+  }
+  
+  /* Paragraphs */
+  .markdown p {
+    font-size: 1.2em;
+    color: #e4e4e7;
+    line-height: 2rem;
+  }
+  
+  /* Lists */
+  .markdown ul {
+    list-style-type: disc;
+    padding-left: 20px;
+  }
+  
+  .markdown ol {
+    list-style-type: decimal;
+    padding-left: 20px;
+  }
+  
+  .markdown li {
+    font-size: 1.1em;
+    margin-bottom: 0.5em;
+  }
+  
+  /* Links */
+  .markdown a {
+    color: #4fa3f7;  /* Light blue links */
+    text-decoration: none;
+  }
+  
+  .markdown a:hover {
+    text-decoration: underline;
+  }
+  
+  /* Blockquotes */
+  .markdown blockquote {
+    border-left: 5px solid #4fa3f7;  /* Blue left border */
+    padding-left: 15px;
+    margin: 1em 0;
+    font-style: italic;
+    color: #dddddd;
+  }
+  
+  /* Code blocks */
+  .markdown pre {
+    background-color: #1e1e22;  /* Darker background for code blocks */
+    padding: 20px;
+    border-radius: 5px;
+    font-family: 'Courier New', monospace;
+    font-size: 1em;
+    color: #f4f4f4;  /* Light color for code text */
+    overflow-x: auto;
+  }
+  
+  .markdown code {
+    background-color: #1e1e22;
+    padding: 2px 5px;
+    font-family: 'Courier New', monospace;
+    font-size: 1em;
+    color: #f4f4f4;
+  }
+  
+  /* Images */
+  .markdown img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 5px;
+  }
+  
+  /* Horizontal rule */
+  .markdown hr {
+    border: 0;
+    border-top: 1px solid #444444;
+    margin: 1.5em 0;
+  }
+  
+  /* Tables */
+  .markdown table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1em;
+  }
+  
+  .markdown table, .markdown th, .markdown td {
+    border: 1px solid #444444;
+  }
+  
+  .markdown th, .markdown td {
+    padding: 10px;
+    text-align: left;
+  }
+  
+  .markdown th {
+    background-color: #333333;
+  }
+  
+  /* Strong and Emphasized Text */
+  .markdown strong {
+    font-weight: bold;
+    color: #ffffff;  /* White for strong text */
+  }
+  
+  .markdown em {
+    font-style: italic;
+    color: #bbbbbb;  /* Light gray for emphasized text */
+  }
+  
+  /* Custom Classes */
+  .markdown .highlight {
+    background-color: #444444;  /* Highlight background */
+    padding: 5px;
+  }
+  
+  .markdown .center {
+    text-align: center;
+  }
+  
+  /* Lists with icons (optional) */
+  .markdown ul li::before {
+    content: '✓';
+    color: #4fa3f7;  /* Custom checkmark color */
+    margin-right: 10px;
+  }
+  
+  
