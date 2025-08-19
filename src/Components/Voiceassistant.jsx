@@ -36,8 +36,11 @@ const VoiceAssistant = () => {
   const [showGoogleButton, setShowGoogleButton] = useState(false);
   const hasWishedRef = useRef(false);
 
+  // Category state - changed to checkbox system
   const [showCategory, setShowCategory] = useState(false);
   const [categories, setCategories] = useState([]);
+  const [selectedCategories, setSelectedCategories] = useState(['all']); // Array of checked categories
+  const [showCategoryButton, setShowCategoryButton] = useState(false);
 
   // Autocomplete state
   const [suggestions, setSuggestions] = useState([]);
@@ -113,11 +116,13 @@ const VoiceAssistant = () => {
     setChatHistory(prev => [...prev, { type: 'user', text: msg }]);
 
     // Handle clear commands first
-    if (lowerMsg === '/cls' || lowerMsg === '/clear') {
+    if (lowerMsg === '/cls' || lowerMsg === '/clear' || lowerMsg === 'cls' || lowerMsg === 'clear') {
       setChatHistory([]);
       if (!fromInput) speak('Chat history cleared.');
       setGoogleSearchQuery('');
       setShowGoogleButton(false);
+      setSelectedCategories(['all']); // Reset to all categories
+      setShowCategoryButton(false);
       return;
     }
 
@@ -147,9 +152,26 @@ const VoiceAssistant = () => {
       return;
     }
 
+    // Filter data based on selected categories
+    let filteredData = latestData;
+    if (!selectedCategories.includes('all')) {
+      filteredData = latestData.filter(item => {
+        // Check if item matches any of the selected categories
+        return selectedCategories.some(category => {
+          if (category === 'markdown') {
+            return item.answer && (item.answer.includes('```') || item.answer.includes('#'));
+          } else if (category === 'general') {
+            return item.category === 'general' || !item.category;
+          } else {
+            return item.category === category;
+          }
+        });
+      });
+    }
+
     // Only return the data item whose question exactly matches the input (case-insensitive, trimmed)
     let matchedItem = null;
-    for (const item of latestData) {
+    for (const item of filteredData) {
       if (item.question) {
         const q = item.question.trim().toLowerCase();
         if (lowerMsg === q) {
@@ -161,22 +183,41 @@ const VoiceAssistant = () => {
 
     if (matchedItem) {
       const { answer, link, image, file, open } = matchedItem;
+      
+      // If markdown category is selected, convert to plain text for display
+      let displayAnswer = answer;
+      if (selectedCategories.includes('markdown')) {
+        displayAnswer = markdownToSpeechText(answer);
+      }
+      
       setChatHistory(prev => [
         ...prev,
         {
           type: 'bot',
-          text: answer,
+          text: displayAnswer,
           link,
           image,
           file,
           open
         }
       ]);
+      
       // Speak the answer as markdown, only if not from input
       if (!fromInput) speak(answer, true);
       if (open && link) {
         window.open(link, '_blank');
       }
+      setGoogleSearchQuery('');
+      setShowGoogleButton(false);
+      return;
+    }
+
+    // If no match found in filtered data, show category-specific message
+    if (!selectedCategories.includes('all')) {
+      const categoryList = selectedCategories.join(', ');
+      const categoryMessage = `No matching question found in selected categories: ${categoryList}. Try asking something else or check "All Categories".`;
+      if (!fromInput) speak(categoryMessage);
+      setChatHistory(prev => [...prev, { type: 'bot', text: categoryMessage }]);
       setGoogleSearchQuery('');
       setShowGoogleButton(false);
       return;
@@ -339,6 +380,49 @@ const VoiceAssistant = () => {
     }
   };
 
+  // Handle category checkbox toggle
+  const handleCategoryToggle = (category) => {
+    setSelectedCategories(prev => {
+      if (category === 'all') {
+        // If "all" is checked, uncheck everything else
+        return ['all'];
+      } else {
+        // Remove "all" if it was selected
+        let newSelection = prev.filter(cat => cat !== 'all');
+        
+        if (prev.includes(category)) {
+          // Uncheck the category
+          newSelection = newSelection.filter(cat => cat !== category);
+          // If no categories selected, default to "all"
+          if (newSelection.length === 0) {
+            newSelection = ['all'];
+          }
+        } else {
+          // Check the category
+          newSelection.push(category);
+        }
+        return newSelection;
+      }
+    });
+  };
+
+  // Get items for a specific category
+  const getCategoryItems = (category) => {
+    if (category === 'all') {
+      return data;
+    } else if (category === 'markdown') {
+      return data.filter(item => 
+        item.answer && (item.answer.includes('```') || item.answer.includes('#'))
+      );
+    } else if (category === 'general') {
+      return data.filter(item => 
+        item.category === 'general' || !item.category
+      );
+    } else {
+      return data.filter(item => item.category === category);
+    }
+  };
+
   // Setup speech recognition
   useEffect(() => {
     if (window.speechSynthesis.getVoices().length === 0) {
@@ -486,20 +570,12 @@ const VoiceAssistant = () => {
 
   if (loading) return <div className="text-white p-4">Loading assistant data...</div>;
 
-  // Handle category click: fill input with category name and hide list
-  const handleCategoryClick = (cat) => {
-    setMessage(cat + ' ');
-    setShowCategory(false);
-    setSuggestions([]);
-    setShowSuggestions(false);
-    setActiveSuggestion(-1);
-  };
-
   return (
     <div className="h-full w-full bg-zinc-800 flex flex-col justify-end p-4">
       {error && (
         <div className="mb-2 text-red-400 bg-transparent rounded px-3 py-2 text-lg">{error}</div>
       )}
+      
       {/* Chat History */}
       <div className="flex flex-col gap-2 overflow-y-auto h-full mb-4 scroll-smooth relative">
         {chatHistory.length === 0 && (
@@ -587,7 +663,7 @@ const VoiceAssistant = () => {
                 <button
                   key={cat + idx}
                   type="button"
-                  onClick={() => handleCategoryClick(cat)}
+                  onClick={() => handleCategoryToggle(cat)}
                   className="bg-zinc-700 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs transition"
                 >
                   {cat}
@@ -691,6 +767,136 @@ const VoiceAssistant = () => {
           )}
         </button>
       </form>
+
+      {/* Categories Button */}
+      <div className="mt-3 flex justify-center">
+        <button
+          type="button"
+          onClick={() => setShowCategoryButton(!showCategoryButton)}
+          className="bg-zinc-700 hover:bg-zinc-800 text-white px-4 py-2 cursor-pointer rounded-md transition flex items-center gap-2"
+        >
+          <i className="ri-list-check text-lg"></i>
+          Categories ({selectedCategories.length})
+        </button>
+      </div>
+
+      {/* Categories with Related Content */}
+      {showCategoryButton && (
+        <div className=" absolute bottom-17 left-1/2 -translate-x-1/2 mt-2 w-full max-w-[700px] mx-auto bg-zinc-900 border border-zinc-700 rounded-lg shadow-lg overflow-hidden">
+          <div className="p-3">
+            <div className="mb-3 text-cyan-300 font-semibold text-sm">Categories with Related Content:</div>
+            
+            {/* All Categories Section */}
+            <div className="mb-4">
+              <label className="flex items-center space-x-3 cursor-pointer mb-2">
+                <input
+                  type="checkbox"
+                  checked={selectedCategories.includes('all')}
+                  onChange={() => handleCategoryToggle('all')}
+                  className="w-4 h-4 text-blue-600 bg-zinc-700 border-zinc-600 rounded focus:ring-blue-500 focus:ring-2"
+                />
+                <span className="text-zinc-200 text-sm font-semibold">📋 All Categories ({data.length} items)</span>
+              </label>
+              {selectedCategories.includes('all') && (
+                <div className="ml-7 bg-zinc-800 rounded p-2 max-h-32 overflow-y-auto">
+                  <div className="text-xs text-zinc-400">
+                    {data.slice(0, 5).map((item, idx) => (
+                      <div key={idx} className="mb-1">• {item.question}</div>
+                    ))}
+                    {data.length > 5 && <div className="text-zinc-500">... and {data.length - 5} more</div>}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Markdown Items Section */}
+            <div className="mb-4">
+              <label className="flex items-center space-x-3 cursor-pointer mb-2">
+                <input
+                  type="checkbox"
+                  checked={selectedCategories.includes('markdown')}
+                  onChange={() => handleCategoryToggle('markdown')}
+                  className="w-4 h-4 text-blue-600 bg-zinc-700 border-zinc-600 rounded focus:ring-blue-500 focus:ring-2"
+                />
+                <span className="text-zinc-200 text-sm font-semibold">📝 Markdown Items</span>
+              </label>
+              {selectedCategories.includes('markdown') && (
+                <div className="ml-7 bg-zinc-800 rounded p-2 max-h-32 overflow-y-auto">
+                  <div className="text-xs text-zinc-400">
+                    {getCategoryItems('markdown').slice(0, 5).map((item, idx) => (
+                      <div key={idx} className="mb-1">• {item.question}</div>
+                    ))}
+                    {getCategoryItems('markdown').length > 5 && (
+                      <div className="text-zinc-500">... and {getCategoryItems('markdown').length - 5} more</div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* General Items Section */}
+            <div className="mb-4">
+              <label className="flex items-center space-x-3 cursor-pointer mb-2">
+                <input
+                  type="checkbox"
+                  checked={selectedCategories.includes('general')}
+                  onChange={() => handleCategoryToggle('general')}
+                  className="w-4 h-4 text-blue-600 bg-zinc-700 border-zinc-600 rounded focus:ring-blue-500 focus:ring-2"
+                />
+                <span className="text-zinc-200 text-sm font-semibold">🌐 General Items</span>
+              </label>
+              {selectedCategories.includes('general') && (
+                <div className="ml-7 bg-zinc-800 rounded p-2 max-h-32 overflow-y-auto">
+                  <div className="text-xs text-zinc-400">
+                    {getCategoryItems('general').slice(0, 5).map((item, idx) => (
+                      <div key={idx} className="mb-1">• {item.question}</div>
+                    ))}
+                    {getCategoryItems('general').length > 5 && (
+                      <div className="text-zinc-500">... and {getCategoryItems('general').length - 5} more</div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Dynamic Categories */}
+            {categories.map((cat, idx) => (
+              <div key={cat + idx} className="mb-4">
+                <label className="flex items-center space-x-3 cursor-pointer mb-2">
+                  <input
+                    type="checkbox"
+                    checked={selectedCategories.includes(cat)}
+                    onChange={() => handleCategoryToggle(cat)}
+                    className="w-4 h-4 text-blue-600 bg-zinc-700 border-zinc-600 rounded focus:ring-blue-500 focus:ring-2"
+                  />
+                  <span className="text-zinc-200 text-sm font-semibold">📂 {cat}</span>
+                </label>
+                {selectedCategories.includes(cat) && (
+                  <div className="ml-7 bg-zinc-800 rounded p-2 max-h-32 overflow-y-auto">
+                    <div className="text-xs text-zinc-400">
+                      {getCategoryItems(cat).slice(0, 5).map((item, itemIdx) => (
+                        <div key={itemIdx} className="mb-1">• {item.question}</div>
+                      ))}
+                      {getCategoryItems(cat).length > 5 && (
+                        <div className="text-zinc-500">... and {getCategoryItems(cat).length - 5} more</div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+            
+            <div className="mt-3 pt-2 border-t border-zinc-700">
+              <div className="text-xs text-zinc-400">
+                Selected Categories: {selectedCategories.join(', ')}
+              </div>
+              <div className="text-xs text-zinc-500 mt-1">
+                Total Items Available: {data.length}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
