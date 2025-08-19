@@ -574,7 +574,7 @@ const VoiceAssistant = () => {
   }, [chatHistory, googleSearchQuery, showCategory]);
   if (loading) return <div className="text-white p-4 w-full h-full bg-zinc-950 flex items-center justify-center"><div className='size-10 flex items-center justify-center animate-spin bg-transparent'><i className='text-lg font-medium ri-loader-4-line'></i></div></div>;
   return (
-    <div className="h-full w-full bg-zinc-800 flex flex-col justify-end p-4">
+    <div className="h-full w-full bg-zinc-900 flex flex-col justify-end p-2">
       {/* Nav */}
       <div className='w-full min-h-10 mb-3 bg-transparent text-zinc-300 px-3 rounded-md border border-zinc-700/30 flex items-center justify-between'>
         <div className='w-fit'><h1 className='text-2xl font-medium'>Gaama</h1></div>
@@ -593,8 +593,8 @@ const VoiceAssistant = () => {
       {/* Chat History */}
       <div className="flex flex-col gap-2 overflow-y-auto h-full mb-4 scroll-smooth relative">
         {chatHistory.length === 0 && (
-          <div className="absolute inset-0 text-white flex items-center justify-center bg-zinc-800 border border-zinc-700/30 z-20 rounded-md">
-            <div className='w-full h-full bg-zinc-700/10 rounded-md p-2 flex flex-col items-start justify-start gap-2'>
+          <div className="absolute inset-0 text-white flex items-center justify-center bg-transparent z-20 rounded-md">
+            <div className='w-full h-full bg-transparent rounded-md p-2 flex flex-col items-start justify-start gap-2'>
               {error && (
                 <div className="px-5 py-1 rounded-md border border-zinc-700/50 text-red-400">{error}</div>
               )}
@@ -682,7 +682,8 @@ const VoiceAssistant = () => {
               {categories.map((cat, idx) => {
                 const isSelected = selectedCategories.includes(cat);
                 return (
-                  <label
+                  <>
+                    <label
                     key={cat + idx}
                     className={`flex items-center gap-2 hover:bg-zinc-700/30 text-start cursor-pointer rounded text-xs transition line-clamp-1 ${
                       isSelected ? 'text-zinc-200' : 'text-zinc-500'
@@ -696,6 +697,7 @@ const VoiceAssistant = () => {
                     />
                     <span className="truncate">{cat}</span>
                   </label>
+                  </>
                 );
               })}
             </div>
@@ -732,7 +734,7 @@ const VoiceAssistant = () => {
           {showSuggestions && suggestions.length > 0 && (
             <ul
               id="autocomplete-list"
-              className="absolute left-0 right-0 bottom-full z-30 bg-zinc-900 border border-zinc-700 rounded-lg max-h-56 overflow-y-auto shadow-lg"
+              className="absolute left-0 right-0 bottom-15 z-30 bg-zinc-900 border border-zinc-700 rounded-lg max-h-56 overflow-y-auto shadow-lg"
               style={{ listStyle: 'none', margin: 0, padding: 0 }}
             >
               {(() => {
@@ -759,8 +761,8 @@ const VoiceAssistant = () => {
                   <li
                     key={suggestion + idx}
                     id={`suggestion-${idx}`}
-                    className={`px-4 py-2 cursor-pointer text-sm text-zinc-200 hover:bg-blue-700 transition ${
-                      idx === activeSuggestion ? 'bg-blue-700 text-white' : ''
+                    className={`px-4 py-2 cursor-pointer text-sm text-zinc-200 hover:bg-zinc-800 transition ${
+                      idx === activeSuggestion ? 'bg-zinc-800 text-white' : ''
                     }`}
                     onMouseDown={() => handleSuggestionClick(suggestion)}
                   >
@@ -782,7 +784,7 @@ const VoiceAssistant = () => {
           onClick={handleStartListening}
           type="button"
           className={`flex items-center cursor-pointer justify-center size-12 rounded-md border border-zinc-100/30 overflow-hidden text-white font-semibold transition text-xl ${
-            listening ? 'bg-zinc-700 hover:bg-zinc-800' : 'bg-zinc-800 hover:bg-zinc-700'
+            listening ? 'bg-zinc-900 hover:bg-zinc-800' : 'bg-zinc-800 hover:bg-zinc-700'
           }`}
           disabled={listening}
           aria-label="Start voice recognition"
