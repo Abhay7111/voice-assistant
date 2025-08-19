@@ -598,9 +598,16 @@ const VoiceAssistant = () => {
               {error && (
                 <div className="px-5 py-1 rounded-md border border-zinc-700/50 text-red-400">{error}</div>
               )}
-              <p className='px-5 py-1 rounded-md border border-zinc-700/50 text-zinc-400 '>sir I {data.length == 0 && <span>don't</span>} have {!data.length == 0 &&<span>{data.length}</span>}  data {data.length == 0 && <span>😒</span>} {selectedCategories.length}</p>
+              <p className='px-5 py-1 rounded-md border border-zinc-700/50 text-zinc-400 '>sir I {data.length == 0 && <span>don't</span>} have {!data.length == 0 &&<span>{data.length}</span>}  data {data.length == 0 && <span>😒</span>}</p>
               {!data.length == 0 && <p className='px-5 py-1 rounded-md border border-zinc-700/50 text-zinc-400 '>But you still not chating! 🥺</p>}
-              {!data.length == 0 && <p className='px-5 py-1 rounded-md border border-zinc-700/50 text-zinc-400 '>I need more data! Please <NavLink to={'/train'} className={` text-blue-400 hover:underline`}>Train</NavLink> me</p>}
+              {!data.length == 0 && <p className='px-5 py-1 rounded-md border border-zinc-700/50 text-zinc-400 '>I need more data! Please {data.length <= 999 && (
+                <NavLink
+                  to={`/train`}
+                  className="text-blue-400/70 hover:text-blue-400 text-sm font-medium hover:underline"
+                >
+                  Teach me
+                </NavLink>
+              )} me.</p>}
             </div>
           </div>
         )}
@@ -800,7 +807,17 @@ const VoiceAssistant = () => {
       {showCategoryButton && (
         <div className=" absolute bottom-20 z-30 left-1/2 -translate-x-1/2 w-[90vw] max-w-[650px] mx-auto bg-zinc-800 border border-zinc-700 rounded-lg shadow-lg overflow-hidden">
           <div className="p-3">
-            <div className="mb-3 text-zinc-200/70 font-medium text-base flex items-center justify-between"><span>Categories with Related Content</span> <NavLink to={`/train`} className={`text-blue-400/70 hover:text-blue-400 text-sm font-medium hover:underline`}>Teach me</NavLink></div>
+            <div className="mb-3 text-zinc-200/70 font-medium text-base flex items-center justify-between">
+              <span>Categories with Related Content</span>
+              {data.length <= 999 && (
+                <NavLink
+                  to={`/train`}
+                  className="text-blue-400/70 hover:text-blue-400 text-sm font-medium hover:underline"
+                >
+                  Teach me
+                </NavLink>
+              )}
+            </div>
             
             {/* All Categories Section */}
             <div className="mb-4">
