@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import Home from './Pages/Home';
-import Assistant from './Components/Voiceassistant';
+import Assistant from './Components/Forms/Voiceassistant';
 
 const router = createBrowserRouter([
   { path: '/', element: <Home /> },
