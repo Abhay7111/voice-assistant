@@ -42,6 +42,10 @@ const VoiceAssistant = () => {
   const [selectedCategories, setSelectedCategories] = useState(['all']); // Array of checked categories
   const [showCategoryButton, setShowCategoryButton] = useState(false);
 
+  // Loading state management
+  const [dataLoaded, setDataLoaded] = useState(false);
+  const [minLoadingComplete, setMinLoadingComplete] = useState(false);
+
   // Autocomplete state
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -64,7 +68,6 @@ const VoiceAssistant = () => {
       null;
     return voice;
   };
-
   // Speak function with fallback for voices not loaded
   const speak = (text, isMarkdown = false) => {
     if (!window.speechSynthesis) return;
@@ -94,7 +97,6 @@ const VoiceAssistant = () => {
       setAndSpeak();
     }
   };
-
   // Greet on load, but only once
   const wishMe = () => {
     if (hasWishedRef.current) return;
@@ -108,7 +110,6 @@ const VoiceAssistant = () => {
       speak('Good evening. How can I help you?');
     }
   };
-
   // Main command handler
   const takeCommand = async (msg, { fromInput = false } = {}) => {
     setListening(false);
@@ -212,17 +213,6 @@ const VoiceAssistant = () => {
       return;
     }
 
-    // If no match found in filtered data, show category-specific message
-    if (!selectedCategories.includes('all')) {
-      const categoryList = selectedCategories.join(', ');
-      const categoryMessage = `No matching question found in selected categories: ${categoryList}. Try asking something else or check "All Categories".`;
-      if (!fromInput) speak(categoryMessage);
-      setChatHistory(prev => [...prev, { type: 'bot', text: categoryMessage }]);
-      setGoogleSearchQuery('');
-      setShowGoogleButton(false);
-      return;
-    }
-
     // Built-in commands
     if (lowerMsg.includes('play music')) {
       if (!fromInput) speak('Playing music...');
@@ -252,7 +242,7 @@ const VoiceAssistant = () => {
       return;
     }
 
-    // Fallback: Google search
+    // No local match → Fallback: Google search only
     const cleaned = lowerMsg.replace(/shipra|shifra/gi, '').trim();
     const fallbackText = cleaned
       ? 'This is what I found on Google: ' + cleaned
@@ -266,8 +256,8 @@ const VoiceAssistant = () => {
       setGoogleSearchQuery('');
       setShowGoogleButton(false);
     }
+    return;
   };
-
   // Start listening
   const handleStartListening = async () => {
     setError('');
@@ -295,7 +285,6 @@ const VoiceAssistant = () => {
       setError('Could not start voice recognition.');
     }
   };
-
   // Handle text input submit
   const handleInputSubmit = (e) => {
     e.preventDefault();
@@ -313,14 +302,12 @@ const VoiceAssistant = () => {
       setActiveSuggestion(-1);
     }
   };
-
   // Open Google search in a new tab
   const handleOpenGoogle = () => {
     if (googleSearchQuery) {
       window.open(`https://www.google.com/search?q=${encodeURIComponent(googleSearchQuery)}`, '_blank');
     }
   };
-
   // Autocomplete: handle input change
   const handleInputChange = (e) => {
     const val = e.target.value;
@@ -343,7 +330,6 @@ const VoiceAssistant = () => {
       setActiveSuggestion(-1);
     }
   };
-
   // Autocomplete: handle suggestion click
   const handleSuggestionClick = (suggestion) => {
     setMessage(suggestion);
@@ -351,7 +337,6 @@ const VoiceAssistant = () => {
     setShowSuggestions(false);
     setActiveSuggestion(-1);
   };
-
   // Autocomplete: handle keyboard navigation
   const handleInputKeyDown = (e) => {
     if (showSuggestions && suggestions.length > 0) {
@@ -379,7 +364,6 @@ const VoiceAssistant = () => {
       }
     }
   };
-
   // Handle category checkbox toggle
   const handleCategoryToggle = (category) => {
     setSelectedCategories(prev => {
@@ -405,7 +389,6 @@ const VoiceAssistant = () => {
       }
     });
   };
-
   // Get items for a specific category
   const getCategoryItems = (category) => {
     if (category === 'all') {
@@ -422,7 +405,6 @@ const VoiceAssistant = () => {
       return data.filter(item => item.category === category);
     }
   };
-
   // Setup speech recognition
   useEffect(() => {
     if (window.speechSynthesis.getVoices().length === 0) {
@@ -486,11 +468,17 @@ const VoiceAssistant = () => {
     };
     // eslint-disable-next-line
   }, []);
-
-  // Fetch assistant data with 5s fallback
+  // Fetch assistant data with 5s fallback and minimum loading time
   useEffect(() => {
     apiFallbackSpokenRef.current = false;
     setLoading(true);
+    setDataLoaded(false);
+    setMinLoadingComplete(false);
+
+    // Set minimum loading time of 5 seconds
+    const minLoadingTimer = setTimeout(() => {
+      setMinLoadingComplete(true);
+    }, 2500);
 
     apiTimeoutRef.current = setTimeout(() => {
       if (loading && !apiFallbackSpokenRef.current) {
@@ -503,14 +491,26 @@ const VoiceAssistant = () => {
       try {
         const res = await axios.get('https://server-01-v2cx.onrender.com/getassistant');
         setData(Array.isArray(res.data) ? res.data : []);
-        setLoading(false);
+        setDataLoaded(true);
         dataLoadedRef.current = true;
+        
+        // Only stop loading if both data is loaded AND minimum time has passed
+        if (minLoadingComplete) {
+          setLoading(false);
+        }
+        
         if (apiTimeoutRef.current) {
           clearTimeout(apiTimeoutRef.current);
         }
       } catch (error) {
         setError('Failed to load assistant data.');
-        setLoading(false);
+        setDataLoaded(true);
+        
+        // Only stop loading if both error occurred AND minimum time has passed
+        if (minLoadingComplete) {
+          setLoading(false);
+        }
+        
         if (apiTimeoutRef.current) {
           clearTimeout(apiTimeoutRef.current);
         }
@@ -526,9 +526,17 @@ const VoiceAssistant = () => {
       if (apiTimeoutRef.current) {
         clearTimeout(apiTimeoutRef.current);
       }
+      if (minLoadingTimer) {
+        clearTimeout(minLoadingTimer);
+      }
     };
   }, []);
-
+  // Handle minimum loading time completion
+  useEffect(() => {
+    if (minLoadingComplete && dataLoaded) {
+      setLoading(false);
+    }
+  }, [minLoadingComplete, dataLoaded]);
   // Extract unique categories from data
   useEffect(() => {
     if (data && data.length > 0) {
@@ -542,7 +550,6 @@ const VoiceAssistant = () => {
       setCategories(cats);
     }
   }, [data]);
-
   // Show/hide category list when user types "/"
   useEffect(() => {
     if (message.trim() === '/') {
@@ -551,7 +558,6 @@ const VoiceAssistant = () => {
       setShowCategory(false);
     }
   }, [message]);
-
   // Hide suggestions if message is cleared
   useEffect(() => {
     if (message.trim().length === 0) {
@@ -560,30 +566,41 @@ const VoiceAssistant = () => {
       setActiveSuggestion(-1);
     }
   }, [message]);
-
   // Scroll to bottom on new chat
   useEffect(() => {
     if (chatEndRef.current) {
       chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [chatHistory, googleSearchQuery, showCategory]);
-
-  if (loading) return <div className="text-white p-4">Loading assistant data...</div>;
-
+  if (loading) return <div className="text-white p-4 w-full h-full bg-zinc-950 flex items-center justify-center"><div className='size-10 flex items-center justify-center animate-spin bg-transparent'><i className='text-lg font-medium ri-loader-4-line'></i></div></div>;
   return (
     <div className="h-full w-full bg-zinc-800 flex flex-col justify-end p-4">
-      {error && (
-        <div className="mb-2 text-red-400 bg-transparent rounded px-3 py-2 text-lg">{error}</div>
-      )}
-      
+      {/* Nav */}
+      <div className='w-full min-h-10 mb-3 bg-transparent text-zinc-300 px-3 rounded-md border border-zinc-700/30 flex items-center justify-between'>
+        <div className='w-fit'><h1 className='text-2xl font-medium'>Gaama</h1></div>
+        <div className='w-fit'>
+          {/* Categories Button */}
+        <button
+          type="button"
+          onClick={() => setShowCategoryButton(!showCategoryButton)}
+          className={` ${selectedCategories.length === 1 ? 'text-zinc-500' : 'text-zinc-300'} transition-all duration-300  px-2 py-0.5 text-sm cursor-pointer flex items-center gap-0.5`}
+        >
+          <i className="ri-list-check text-lg"></i>
+          Categories ({selectedCategories.length})
+        </button>
+      </div>
+      </div>
       {/* Chat History */}
       <div className="flex flex-col gap-2 overflow-y-auto h-full mb-4 scroll-smooth relative">
         {chatHistory.length === 0 && (
-          <div className="absolute inset-0 text-white flex items-center justify-center bg-transparent z-20 rounded-2xl">
-            <div className='w-full h-full bg-zinc-700/10 border border-zinc-700/30 rounded-2xl p-2 flex flex-col items-start justify-start gap-2'>
-              <p className='px-5 py-1 rounded-md border border-zinc-700/50 text-zinc-400 '>sir I have {data.length} data</p>
-              <p className='px-5 py-1 rounded-md border border-zinc-700/50 text-zinc-400 '>But you still not chating! 🥺</p>
-              <p className='px-5 py-1 rounded-md border border-zinc-700/50 text-zinc-400 '>I need more data! Please <NavLink to={'/train'} className={` text-blue-400 hover:underline`}>Train</NavLink> me</p>
+          <div className="absolute inset-0 text-white flex items-center justify-center bg-zinc-800 border border-zinc-700/30 z-20 rounded-md">
+            <div className='w-full h-full bg-zinc-700/10 rounded-md p-2 flex flex-col items-start justify-start gap-2'>
+              {error && (
+                <div className="px-5 py-1 rounded-md border border-zinc-700/50 text-red-400">{error}</div>
+              )}
+              <p className='px-5 py-1 rounded-md border border-zinc-700/50 text-zinc-400 '>sir I {data.length == 0 && <span>don't</span>} have {!data.length == 0 &&<span>{data.length}</span>}  data {data.length == 0 && <span>😒</span>} {selectedCategories.length}</p>
+              {!data.length == 0 && <p className='px-5 py-1 rounded-md border border-zinc-700/50 text-zinc-400 '>But you still not chating! 🥺</p>}
+              {!data.length == 0 && <p className='px-5 py-1 rounded-md border border-zinc-700/50 text-zinc-400 '>I need more data! Please <NavLink to={'/train'} className={` text-blue-400 hover:underline`}>Train</NavLink> me</p>}
             </div>
           </div>
         )}
@@ -600,19 +617,21 @@ const VoiceAssistant = () => {
               <div className="relative mb-1">
                 {chat.text && (
                   <div className='flex items-start justify-start gap-2'>
-                    <div className="markdown"><Markdown target='_blank'>{chat.text}</Markdown> </div>
-                    {chat.type === 'user' ? '' : <button
-                      type="button"
-                      className=" w-4 bg-transparent cursor-pointer transition-all duration-300 text-zinc-600 hover:text-zinc-200"
-                      title="Copy to clipboard"
-                      onClick={() => {
-                        if (typeof chat.text === 'string') {
-                          navigator.clipboard.writeText(chat.text);
-                        }
-                      }}
-                    >
-                      <i className='ri-file-copy-2-line text-xl'></i>
-                    </button>}
+                    <div className="markdown"><Markdown target='_blank'>{chat.text}</Markdown></div>
+                    {chat.type === 'user' ? '' : (
+                      <button
+                        type="button"
+                        className=" w-4 bg-transparent cursor-pointer transition-all duration-300 text-zinc-600 hover:text-zinc-200"
+                        title="Copy to clipboard"
+                        onClick={() => {
+                          if (typeof chat.text === 'string') {
+                            navigator.clipboard.writeText(chat.text);
+                          }
+                        }}
+                      >
+                        <i className='ri-file-copy-2-line text-xl'></i>
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
@@ -652,28 +671,37 @@ const VoiceAssistant = () => {
         ))}
         <div ref={chatEndRef} />
       </div>
-
       {/* Category List */}
       {showCategory && categories.length > 0 && (
-        <div className="mb-2 w-full pb-4 h-fit max-w-full rounded-xl overflow-hidden border border-zinc-700 bg-zinc-900 shadow-lg z-50">
-          <div className="p-3">
-            <div className="mb-2 text-cyan-300 font-semibold text-sm">I have {categories.length} Categories</div>
-            <div className="flex flex-wrap gap-2">
-              {categories.map((cat, idx) => (
-                <button
-                  key={cat + idx}
-                  type="button"
-                  onClick={() => handleCategoryToggle(cat)}
-                  className="bg-zinc-700 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs transition"
-                >
-                  {cat}
-                </button>
-              ))}
+        <div className="mb-2 w-fit max-h-96 rounded-xl border border-zinc-700 bg-zinc-900 shadow-lg z-50">
+          <div className="p-2" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+            <div className=" text-zinc-300/70 font-medium text-base">
+              I have {categories.length} {categories.length === 1 ? 'Category' : 'Categories'}
+            </div>
+            <div className="flex flex-col gap-0.5">
+              {categories.map((cat, idx) => {
+                const isSelected = selectedCategories.includes(cat);
+                return (
+                  <label
+                    key={cat + idx}
+                    className={`flex items-center gap-2 hover:bg-zinc-700/30 text-start cursor-pointer rounded text-xs transition line-clamp-1 ${
+                      isSelected ? 'text-zinc-200' : 'text-zinc-500'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => handleCategoryToggle(cat)}
+                      className="accent-cyan-400"
+                    />
+                    <span className="truncate">{cat}</span>
+                  </label>
+                );
+              })}
             </div>
           </div>
         </div>
       )}
-
       {/* Google Search Results */}
       {googleSearchQuery && (
         <div className="mb-5 w-full max-w-full rounded-2xl overflow-hidden border border-zinc-700 bg-zinc-900 h-[95vh]" >
@@ -685,7 +713,6 @@ const VoiceAssistant = () => {
           />
         </div>
       )}
-
       {/* Input & Buttons */}
       <form onSubmit={handleInputSubmit} className="flex gap-2 w-full relative">
         <div className="flex-1 relative">
@@ -767,24 +794,11 @@ const VoiceAssistant = () => {
           )}
         </button>
       </form>
-
-      {/* Categories Button */}
-      <div className="mt-3 flex justify-center">
-        <button
-          type="button"
-          onClick={() => setShowCategoryButton(!showCategoryButton)}
-          className="bg-zinc-700 hover:bg-zinc-800 text-white px-4 py-2 cursor-pointer rounded-md transition flex items-center gap-2"
-        >
-          <i className="ri-list-check text-lg"></i>
-          Categories ({selectedCategories.length})
-        </button>
-      </div>
-
       {/* Categories with Related Content */}
       {showCategoryButton && (
-        <div className=" absolute bottom-17 left-1/2 -translate-x-1/2 mt-2 w-full max-w-[700px] mx-auto bg-zinc-900 border border-zinc-700 rounded-lg shadow-lg overflow-hidden">
+        <div className=" absolute bottom-20 z-30 left-1/2 -translate-x-1/2 w-[90vw] max-w-[650px] mx-auto bg-zinc-800 border border-zinc-700 rounded-lg shadow-lg overflow-hidden">
           <div className="p-3">
-            <div className="mb-3 text-cyan-300 font-semibold text-sm">Categories with Related Content:</div>
+            <div className="mb-3 text-zinc-200/70 font-medium text-base flex items-center justify-between"><span>Categories with Related Content</span> <NavLink to={`/train`} className={`text-blue-400/70 hover:text-blue-400 text-sm font-medium hover:underline`}>Teach me</NavLink></div>
             
             {/* All Categories Section */}
             <div className="mb-4">
@@ -793,72 +807,13 @@ const VoiceAssistant = () => {
                   type="checkbox"
                   checked={selectedCategories.includes('all')}
                   onChange={() => handleCategoryToggle('all')}
-                  className="w-4 h-4 text-blue-600 bg-zinc-700 border-zinc-600 rounded focus:ring-blue-500 focus:ring-2"
+                  className="w-4 h-4 text-blue-600 bg-zinc-700 border-zinc-600 rounded"
                 />
-                <span className="text-zinc-200 text-sm font-semibold">📋 All Categories ({data.length} items)</span>
+                <span className={`${selectedCategories.includes('all') ? 'text-zinc-200' : 'text-zinc-500'} text-sm font-semibold`}>
+                  📋 All Categories ({data.length} items)
+                </span>
               </label>
-              {selectedCategories.includes('all') && (
-                <div className="ml-7 bg-zinc-800 rounded p-2 max-h-32 overflow-y-auto">
-                  <div className="text-xs text-zinc-400">
-                    {data.slice(0, 5).map((item, idx) => (
-                      <div key={idx} className="mb-1">• {item.question}</div>
-                    ))}
-                    {data.length > 5 && <div className="text-zinc-500">... and {data.length - 5} more</div>}
-                  </div>
-                </div>
-              )}
             </div>
-
-            {/* Markdown Items Section */}
-            <div className="mb-4">
-              <label className="flex items-center space-x-3 cursor-pointer mb-2">
-                <input
-                  type="checkbox"
-                  checked={selectedCategories.includes('markdown')}
-                  onChange={() => handleCategoryToggle('markdown')}
-                  className="w-4 h-4 text-blue-600 bg-zinc-700 border-zinc-600 rounded focus:ring-blue-500 focus:ring-2"
-                />
-                <span className="text-zinc-200 text-sm font-semibold">📝 Markdown Items</span>
-              </label>
-              {selectedCategories.includes('markdown') && (
-                <div className="ml-7 bg-zinc-800 rounded p-2 max-h-32 overflow-y-auto">
-                  <div className="text-xs text-zinc-400">
-                    {getCategoryItems('markdown').slice(0, 5).map((item, idx) => (
-                      <div key={idx} className="mb-1">• {item.question}</div>
-                    ))}
-                    {getCategoryItems('markdown').length > 5 && (
-                      <div className="text-zinc-500">... and {getCategoryItems('markdown').length - 5} more</div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* General Items Section */}
-            <div className="mb-4">
-              <label className="flex items-center space-x-3 cursor-pointer mb-2">
-                <input
-                  type="checkbox"
-                  checked={selectedCategories.includes('general')}
-                  onChange={() => handleCategoryToggle('general')}
-                  className="w-4 h-4 text-blue-600 bg-zinc-700 border-zinc-600 rounded focus:ring-blue-500 focus:ring-2"
-                />
-                <span className="text-zinc-200 text-sm font-semibold">🌐 General Items</span>
-              </label>
-              {selectedCategories.includes('general') && (
-                <div className="ml-7 bg-zinc-800 rounded p-2 max-h-32 overflow-y-auto">
-                  <div className="text-xs text-zinc-400">
-                    {getCategoryItems('general').slice(0, 5).map((item, idx) => (
-                      <div key={idx} className="mb-1">• {item.question}</div>
-                    ))}
-                    {getCategoryItems('general').length > 5 && (
-                      <div className="text-zinc-500">... and {getCategoryItems('general').length - 5} more</div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-
             {/* Dynamic Categories */}
             {categories.map((cat, idx) => (
               <div key={cat + idx} className="mb-4">
@@ -867,22 +822,12 @@ const VoiceAssistant = () => {
                     type="checkbox"
                     checked={selectedCategories.includes(cat)}
                     onChange={() => handleCategoryToggle(cat)}
-                    className="w-4 h-4 text-blue-600 bg-zinc-700 border-zinc-600 rounded focus:ring-blue-500 focus:ring-2"
+                    className="w-4 h-4 bg-zinc-700 border-zinc-600 rounded"
                   />
-                  <span className="text-zinc-200 text-sm font-semibold">📂 {cat}</span>
+                  <span className={`${selectedCategories.includes(cat) ? 'text-zinc-200' : 'text-zinc-500'} text-sm font-semibold`}>
+                    📂 {cat}
+                  </span>
                 </label>
-                {selectedCategories.includes(cat) && (
-                  <div className="ml-7 bg-zinc-800 rounded p-2 max-h-32 overflow-y-auto">
-                    <div className="text-xs text-zinc-400">
-                      {getCategoryItems(cat).slice(0, 5).map((item, itemIdx) => (
-                        <div key={itemIdx} className="mb-1">• {item.question}</div>
-                      ))}
-                      {getCategoryItems(cat).length > 5 && (
-                        <div className="text-zinc-500">... and {getCategoryItems(cat).length - 5} more</div>
-                      )}
-                    </div>
-                  </div>
-                )}
               </div>
             ))}
             
@@ -891,7 +836,10 @@ const VoiceAssistant = () => {
                 Selected Categories: {selectedCategories.join(', ')}
               </div>
               <div className="text-xs text-zinc-500 mt-1">
-                Total Items Available: {data.length}
+                <span>
+                  Total Items Available:
+                  {data.filter(item => selectedCategories.includes(item.category)).length}
+                </span>
               </div>
             </div>
           </div>
@@ -900,5 +848,4 @@ const VoiceAssistant = () => {
     </div>
   );
 };
-
 export default VoiceAssistant;
