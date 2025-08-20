@@ -56,6 +56,8 @@ const VoiceAssistant = () => {
 
   const dataLoadedRef = useRef(false);
   const lastCommandFromInputRef = useRef(false);
+  const Datacount = data.length;
+  const Questions = data.map((items)=>(<>{items.question}, </>))
 
   // Helper: get a voice, fallback to default if not found
   const getVoice = () => {
@@ -314,7 +316,7 @@ const VoiceAssistant = () => {
     setMessage(val);
 
     // Only show suggestions if input is not empty and data is loaded
-    if (val.trim().length > 0 && data && data.length > 0) {
+    if (val.trim().length > 0 && data && Datacount > 0) {
       // Find questions that start with the input (case-insensitive)
       const inputLower = val.trim().toLowerCase();
       const filtered = data
@@ -539,7 +541,7 @@ const VoiceAssistant = () => {
   }, [minLoadingComplete, dataLoaded]);
   // Extract unique categories from data
   useEffect(() => {
-    if (data && data.length > 0) {
+    if (data && Datacount > 0) {
       const cats = Array.from(
         new Set(
           data
@@ -572,7 +574,7 @@ const VoiceAssistant = () => {
       chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [chatHistory, googleSearchQuery, showCategory]);
-  if (loading) return <div className="text-white p-4 w-full h-full bg-zinc-950 flex items-center justify-center"><div className='size-10 flex items-center justify-center animate-spin bg-transparent'><i className='text-lg font-medium ri-loader-4-line'></i></div></div>;
+  if (loading) return <div className="text-white p-4 w-full h-full bg-zinc-950 flex items-center justify-center"><div className='size-10 flex items-center justify-center animate-spin bg-transparent'><i className='text-xl font-medium ri-loader-4-line'></i></div></div>;
   return (
     <div className="h-full w-full bg-zinc-900 flex flex-col justify-end p-2">
       {/* Nav */}
@@ -598,16 +600,14 @@ const VoiceAssistant = () => {
               {error && (
                 <div className="px-5 py-1 rounded-md border border-zinc-700/50 text-red-400">{error}</div>
               )}
-              <p className='px-5 py-1 rounded-md border border-zinc-700/50 text-zinc-400 '>sir I {data.length == 0 && <span>don't</span>} have {!data.length == 0 &&<span>{data.length}</span>}  data {data.length == 0 && <span>😒</span>}</p>
-              {!data.length == 0 && <p className='px-5 py-1 rounded-md border border-zinc-700/50 text-zinc-400 '>But you still not chating! 🥺</p>}
-              {!data.length == 0 && <p className='px-5 py-1 rounded-md border border-zinc-700/50 text-zinc-400 '>I need more data! Please {data.length <= 999 && (
-                <NavLink
-                  to={`/train`}
-                  className="text-blue-400/70 hover:text-blue-400 text-sm font-medium hover:underline"
-                >
-                  Teach me
-                </NavLink>
-              )} me.</p>}
+              <p className='px-2 py-1 rounded-md border border-zinc-700/50 w-full max-w-[85%] text-zinc-400 '>
+              {8 <= 8 
+                ? "Sir, I don’t have enough knowledge right now to assist you properly. I'm still learning and gathering information. Please be patient with me as I improve." 
+                : "Sir, I have a lot of data available. I'm ready to assist you with accurate and helpful information to the best of my ability."}
+              </p>
+              {!Datacount == 0 && <p className='px-2 py-1 rounded-md border border-zinc-700/50 w-full max-w-[85%] text-zinc-400 '>If you're willing to guide me, I’d be truly grateful. Learning from you would be an excellent opportunity to grow, improve my skills, and contribute more effectively.</p>}
+              {!Datacount == 0 && <p className='px-2 py-1 rounded-md border border-zinc-700/50 w-full max-w-[85%] text-zinc-400 '>I’m eager to learn more. I would sincerely appreciate your guidance and support in <NavLink to={`/train`} className={`text-blue-500/60`}>helping</NavLink> me grow.</p>}
+              {Datacount <= 99 && <p className='px-2 py-2 rounded-md border border-zinc-700/50 w-full max-w-[85%] text-zinc-400 flex flex-wrap gap-2 leading-4 '>I have knowledge on this : {Questions}</p>}
             </div>
           </div>
         )}
@@ -809,7 +809,7 @@ const VoiceAssistant = () => {
           <div className="p-3">
             <div className="mb-3 text-zinc-200/70 font-medium text-base flex items-center justify-between">
               <span>Categories with Related Content</span>
-              {data.length <= 999 && (
+              {Datacount <= 999 && (
                 <NavLink
                   to={`/train`}
                   className="text-blue-400/70 hover:text-blue-400 text-sm font-medium hover:underline"
@@ -829,7 +829,7 @@ const VoiceAssistant = () => {
                   className="w-4 h-4 text-blue-600 bg-zinc-700 border-zinc-600 rounded"
                 />
                 <span className={`${selectedCategories.includes('all') ? 'text-zinc-200' : 'text-zinc-500'} text-sm font-semibold`}>
-                  📋 All Categories ({data.length} items)
+                  📋 All Categories ({Datacount} items)
                 </span>
               </label>
             </div>
