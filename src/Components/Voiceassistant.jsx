@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import Markdown from 'react-markdown';
 import { NavLink } from 'react-router-dom';
-import Typist from 'react-typist';
 
 // Typewriter Component - Auto-detect animation type based on word count
 const TypewriterText = ({ text, speed = 80, delay = 0, onComplete }) => {
