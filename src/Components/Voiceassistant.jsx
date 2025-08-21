@@ -8,6 +8,13 @@ const TypewriterText = ({ text, speed = 80, delay = 0, onComplete }) => {
   const [displayText, setDisplayText] = useState('');
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isTyping, setIsTyping] = useState(false);
+  const apiTimeoutRef = useRef(null);
+  const apiFallbackSpokenRef = useRef(false);
+
+  const dataLoadedRef = useRef(false);
+  const lastCommandFromInputRef = useRef(false);
+  const prefetchingRef = useRef(false);
+  const Datacount = data.length;
 
   useEffect(() => {
     if (!text) return;
@@ -381,33 +388,40 @@ const VoiceAssistant = () => {
     }
     return;
   };
-  // Start listening
-  const handleStartListening = async () => {
-    setError('');
-    setLoading(true);
-    try {
-      const res = await axios.get('https://server-01-v2cx.onrender.com/getassistant');
-      setData(Array.isArray(res.data) ? res.data : []);
-      setLoading(false);
-      dataLoadedRef.current = true;
-    } catch (err) {
-      setError('Failed to load assistant data for voice recognition.');
-      setLoading(false);
-      speak('Sorry, I failed to load my brain.');
-      return;
-    }
-    if (!recognitionRef.current) {
-      setError('Speech recognition is not available.');
-      return;
-    }
-    setListening(true);
-    try {
-      recognitionRef.current.start();
-    } catch (err) {
-      setListening(false);
-      setError('Could not start voice recognition.');
-    }
-  };
+    // Start listening
+    const handleStartListening = async () => {
+      setError('');
+  
+      // Start recognition immediately (no global loading)
+      if (!recognitionRef.current) {
+        setError('Speech recognition is not available.');
+        return;
+      }
+      setListening(true);
+      try {
+        recognitionRef.current.start();
+      } catch (err) {
+        setListening(false);
+        setError('Could not start voice recognition.');
+      }
+  
+      // Prefetch data silently in background
+      if (!dataLoadedRef.current && !prefetchingRef.current) {
+        prefetchingRef.current = true;
+        axios
+          .get('https://server-01-v2cx.onrender.com/getassistant')
+          .then(res => {
+            setData(Array.isArray(res.data) ? res.data : []);
+            dataLoadedRef.current = true;
+          })
+          .catch(() => {
+            // silent background failure
+          })
+          .finally(() => {
+            prefetchingRef.current = false;
+          });
+      }
+    };
   // Handle text input submit
   const handleInputSubmit = (e) => {
     e.preventDefault();
