@@ -718,7 +718,7 @@ const VoiceAssistant = () => {
     <div className="h-full w-full bg-zinc-900 flex flex-col justify-end p-2">
       {/* Nav */}
       <div className='w-full min-h-10 mb-3 bg-transparent text-zinc-300 px-3 rounded-md border border-zinc-700/30 flex items-center justify-between'>
-        <div className='w-fit'><h1 className='text-2xl font-medium'>Gaama</h1></div>
+        <div className='w-fit'><h1 className='text-2xl font-medium'>Gaama.<span className='text-sm font-mediu lowercase'>AI</span></h1></div>
         <div className='w-fit'>
           {/* Categories Button */}
         <button
@@ -903,13 +903,7 @@ const VoiceAssistant = () => {
           
           {/* Autocomplete Suggestions */}
           {showSuggestions && suggestions.length > 0 && (
-            <div className="absolute bottom-full left-0 right-0 mb-3 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-2xl shadow-2xl max-h-60 overflow-y-auto backdrop-blur-xl">
-              <div className="p-3 border-b border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-700/50">
-                <div className="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
-                  <span>Suggestions from selected categories</span>
-                  <span>{suggestions.length} results</span>
-                </div>
-              </div>
+            <div className="absolute bottom-full left-0 right-0 mb-3 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-2xl shadow-2xl max-h-96 overflow-y-auto backdrop-blur-xl">
               {suggestions.map((suggestion, idx) => {
                 // Find the original data item to get category info
                 const originalItem = data.find(item => item.question === suggestion);
@@ -920,21 +914,12 @@ const VoiceAssistant = () => {
                     key={idx}
                     type="button"
                     onClick={() => handleSuggestionClick(suggestion)}
-                    className={`w-full px-6 py-4 text-left hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors ${
-                      idx === activeSuggestion ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300' : 'text-zinc-700 dark:text-zinc-300'
+                    className={`w-full px-6 py-0 text-left hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors ${
+                      idx === activeSuggestion ? 'bg-blue-50 cursor-pointer dark:bg-blue-900/50 text-blue-700 dark:text-blue-300' : 'text-zinc-700 dark:text-zinc-300'
                     }`}
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="text-base">{suggestion}</span>
-                      <span className={`text-xs px-2 py-1 rounded-full ${
-                        category === 'general' || !category 
-                          ? 'bg-zinc-100 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-400'
-                          : category === 'markdown'
-                          ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
-                          : 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                      }`}>
-                        {category || 'general'}
-                      </span>
+                    <div className="flex items-center justify-between py-2 cursor-pointer">
+                      <span title={category || 'general'} className="text-base">{suggestion}</span>
                     </div>
                   </button>
                 );
