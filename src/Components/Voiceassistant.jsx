@@ -1,7 +1,129 @@
 import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import Markdown from 'react-markdown';
-import { NavLink } from 'react-router';
+import { NavLink } from 'react-router-dom';
+import Typist from 'react-typist';
+
+// Typewriter Component - Auto-detect animation type based on word count
+const TypewriterText = ({ text, speed = 80, delay = 0, onComplete }) => {
+  const [displayText, setDisplayText] = useState('');
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isTyping, setIsTyping] = useState(false);
+
+  useEffect(() => {
+    if (!text) return;
+
+    setIsTyping(true);
+    setDisplayText('');
+    setCurrentIndex(0);
+
+    const timer = setTimeout(() => {
+      // Count words in the text
+      const wordCount = text.trim().split(/\s+/).length;
+      
+      // Choose animation type based on word count
+      const animateBy = wordCount <= 40 ? 'words' : 'lines';
+      
+      let textUnits;
+      if (animateBy === 'words') {
+        textUnits = text.split(' ');
+      } else {
+        textUnits = text.split('\n');
+      }
+
+      const interval = setInterval(() => {
+        setCurrentIndex(prev => {
+          if (prev >= textUnits.length) {
+            clearInterval(interval);
+            setIsTyping(false);
+            if (onComplete) onComplete();
+            return prev;
+          }
+          
+          let newText;
+          if (animateBy === 'words') {
+            newText = textUnits.slice(0, prev + 1).join(' ');
+          } else {
+            newText = textUnits.slice(0, prev + 1).join('\n');
+          }
+          
+          setDisplayText(newText);
+          return prev + 1;
+        });
+      }, speed);
+
+      return () => clearInterval(interval);
+    }, delay);
+
+    return () => clearTimeout(timer);
+  }, [text, speed, delay, onComplete]);
+
+  return (
+    <span className="typewriter-text">
+      {displayText}
+    </span>
+  );
+};
+
+// Typewriter Markdown Component - Auto-detect animation type based on word count
+const TypewriterMarkdown = ({ text, speed = 80, delay = 0 }) => {
+  const [displayText, setDisplayText] = useState('');
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isTyping, setIsTyping] = useState(false);
+
+  useEffect(() => {
+    if (!text) return;
+
+    setIsTyping(true);
+    setDisplayText('');
+    setCurrentIndex(0);
+
+    const timer = setTimeout(() => {
+      // Count words in the text
+      const wordCount = text.trim().split(/\s+/).length;
+      
+      // Choose animation type based on word count
+      const animateBy = wordCount <= 40 ? 'words' : 'lines';
+      
+      let textUnits;
+      if (animateBy === 'words') {
+        textUnits = text.split(' ');
+      } else {
+        textUnits = text.split('\n');
+      }
+
+      const interval = setInterval(() => {
+        setCurrentIndex(prev => {
+          if (prev >= textUnits.length) {
+            clearInterval(interval);
+            setIsTyping(false);
+            return prev;
+          }
+          
+          let newText;
+          if (animateBy === 'words') {
+            newText = textUnits.slice(0, prev + 1).join(' ');
+          } else {
+            newText = textUnits.slice(0, prev + 1).join('\n');
+          }
+          
+          setDisplayText(newText);
+          return prev + 1;
+        });
+      }, speed);
+
+      return () => clearInterval(interval);
+    }, delay);
+
+    return () => clearTimeout(timer);
+  }, [text, speed, delay]);
+
+  return (
+    <div className="typewriter-markdown">
+      <Markdown>{displayText}</Markdown>
+    </div>
+  );
+};
 
 // Utility: Convert Markdown to plain text for speech
 function markdownToSpeechText(markdown) {
@@ -317,9 +439,26 @@ const VoiceAssistant = () => {
 
     // Only show suggestions if input is not empty and data is loaded
     if (val.trim().length > 0 && data && Datacount > 0) {
-      // Find questions that start with the input (case-insensitive)
+      // Filter data based on selected categories first
+      let filteredData = data;
+      if (!selectedCategories.includes('all')) {
+        filteredData = data.filter(item => {
+          // Check if item matches any of the selected categories
+          return selectedCategories.some(category => {
+            if (category === 'markdown') {
+              return item.answer && (item.answer.includes('```') || item.answer.includes('#'));
+            } else if (category === 'general') {
+              return item.category === 'general' || !item.category;
+            } else {
+              return item.category === category;
+            }
+          });
+        });
+      }
+
+      // Find questions that start with the input (case-insensitive) from filtered data
       const inputLower = val.trim().toLowerCase();
-      const filtered = data
+      const filtered = filteredData
         .filter(item => item.question && item.question.toLowerCase().startsWith(inputLower))
         .map(item => item.question);
 
@@ -611,7 +750,7 @@ const VoiceAssistant = () => {
             </div>
           </div>
         )}
-        {chatHistory.length > 0 && chatHistory.map((chat, index) => (
+        {Array.isArray(chatHistory) && chatHistory.length > 0 && chatHistory.map((chat, index) => (
           <div
             key={index}
             className={`w-full flex ${chat.type === 'user' ? 'justify-end' : 'justify-start'}`}
@@ -624,15 +763,40 @@ const VoiceAssistant = () => {
               <div className="relative mb-1">
                 {chat.text && (
                   <div className='flex items-start justify-start gap-2'>
-                    <div className="markdown"><Markdown target='_blank'>{chat.text}</Markdown></div>
-                    {chat.type === 'user' ? '' : (
+                    <div className="markdown">
+                      {chat.type === 'user' ? (
+                        <span>{chat.text}</span>
+                      ) : (
+                        <TypewriterMarkdown 
+                          text={chat.text} 
+                          speed={80} 
+                          delay={index * 100}
+                        />
+                      )}
+                    </div>
+                    {chat.type === 'user' ? null : (
                       <button
                         type="button"
-                        className=" w-4 bg-transparent cursor-pointer transition-all duration-300 text-zinc-600 hover:text-zinc-200"
+                        className="w-4 bg-transparent cursor-pointer transition-all duration-300 text-zinc-600 hover:text-zinc-200"
                         title="Copy to clipboard"
-                        onClick={() => {
+                        onClick={async () => {
                           if (typeof chat.text === 'string') {
-                            navigator.clipboard.writeText(chat.text);
+                            try {
+                              await navigator.clipboard.writeText(chat.text);
+                            } catch (err) {
+                              console.error('Failed to copy text: ', err);
+                              // Fallback for older browsers
+                              const textArea = document.createElement('textarea');
+                              textArea.value = chat.text;
+                              document.body.appendChild(textArea);
+                              textArea.select();
+                              try {
+                                document.execCommand('copy');
+                              } catch (fallbackErr) {
+                                console.error('Fallback copy failed: ', fallbackErr);
+                              }
+                              document.body.removeChild(textArea);
+                            }
                           }
                         }}
                       >
@@ -730,54 +894,52 @@ const VoiceAssistant = () => {
             value={message}
             onChange={handleInputChange}
             onKeyDown={handleInputKeyDown}
-            placeholder="Ask a question..."
-            className="w-full p-3 border border-gray-300/30 text-white bg-zinc-800 rounded-md focus:outline-none focus:ring focus:ring-zinc-500"
+            placeholder={`Ask me anything${!selectedCategories.includes('all') ? ` (${selectedCategories.join(', ')})` : ''}...`}
+            className="w-full px-6 py-2.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 rounded-lg focus:outline-none focus:ring-4 focus:ring-zinc-500/20 dark:focus:ring-zinc-400/20 focus:border-transparent transition-all duration-300 text-zinc-700 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-500 text-lg shadow-lg"
             autoComplete="off"
-            aria-autocomplete="list"
-            aria-controls="autocomplete-list"
-            aria-activedescendant={activeSuggestion >= 0 ? `suggestion-${activeSuggestion}` : undefined}
           />
+          
+          {/* Show selected categories indicator */}
+          
           {/* Autocomplete Suggestions */}
           {showSuggestions && suggestions.length > 0 && (
-            <ul
-              id="autocomplete-list"
-              className="absolute left-0 right-0 bottom-15 z-30 bg-zinc-900 border border-zinc-700 rounded-lg max-h-56 overflow-y-auto shadow-lg"
-              style={{ listStyle: 'none', margin: 0, padding: 0 }}
-            >
-              {(() => {
-                // Get the current input value split into words
-                const words = message.trim().split(/\s+/);
-                // If there are words, get the middle word (or nearest to middle)
-                let middleWord = '';
-                if (words.length > 0) {
-                  const midIdx = Math.floor((words.length - 1) / 2);
-                  middleWord = words[midIdx];
-                }
-                // Filter suggestions that include the middle word (case-insensitive)
-                let middleWordSuggestions = [];
-                if (middleWord && middleWord.length > 0) {
-                  middleWordSuggestions = suggestions.filter(s =>
-                    s.toLowerCase().includes(middleWord.toLowerCase())
-                  );
-                }
-                // Remove duplicates if any
-                const uniqueSuggestions = Array.from(
-                  new Set([...middleWordSuggestions, ...suggestions])
-                );
-                return uniqueSuggestions.map((suggestion, idx) => (
-                  <li
-                    key={suggestion + idx}
-                    id={`suggestion-${idx}`}
-                    className={`px-4 py-2 cursor-pointer text-sm text-zinc-200 hover:bg-zinc-800 transition ${
-                      idx === activeSuggestion ? 'bg-zinc-800 text-white' : ''
+            <div className="absolute bottom-full left-0 right-0 mb-3 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-2xl shadow-2xl max-h-60 overflow-y-auto backdrop-blur-xl">
+              <div className="p-3 border-b border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-700/50">
+                <div className="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
+                  <span>Suggestions from selected categories</span>
+                  <span>{suggestions.length} results</span>
+                </div>
+              </div>
+              {suggestions.map((suggestion, idx) => {
+                // Find the original data item to get category info
+                const originalItem = data.find(item => item.question === suggestion);
+                const category = originalItem?.category || 'general';
+                
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => handleSuggestionClick(suggestion)}
+                    className={`w-full px-6 py-4 text-left hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors ${
+                      idx === activeSuggestion ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300' : 'text-zinc-700 dark:text-zinc-300'
                     }`}
-                    onMouseDown={() => handleSuggestionClick(suggestion)}
                   >
-                    {suggestion}
-                  </li>
-                ));
-              })()}
-            </ul>
+                    <div className="flex items-center justify-between">
+                      <span className="text-base">{suggestion}</span>
+                      <span className={`text-xs px-2 py-1 rounded-full ${
+                        category === 'general' || !category 
+                          ? 'bg-zinc-100 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-400'
+                          : category === 'markdown'
+                          ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
+                          : 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                      }`}>
+                        {category || 'general'}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           )}
         </div>
         <button
