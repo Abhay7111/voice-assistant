@@ -907,7 +907,7 @@ const VoiceAssistant = () => {
             value={message}
             onChange={handleInputChange}
             onKeyDown={handleInputKeyDown}
-            placeholder={`Ask me anything${!selectedCategories.includes('all') ? ` (${selectedCategories.join(', ')})` : ''}...`}
+            placeholder={`Ask me ${selectedCategories.length === 1 ? 'anything' : 'on this'} ${!selectedCategories.includes('all') ? ` (${selectedCategories.join(', ')})` : ''} ${selectedCategories.length === 1 ? '' : 'topics'}...`}
             className="w-full px-6 py-2.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 rounded-lg focus:outline-none focus:ring-4 focus:ring-zinc-500/20 dark:focus:ring-zinc-400/20 focus:border-transparent transition-all duration-300 text-zinc-700 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-500 text-lg shadow-lg"
             autoComplete="off"
           />
@@ -923,28 +923,30 @@ const VoiceAssistant = () => {
                 const category = originalItem?.category || 'general';
                 
                 return (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => handleSuggestionClick(suggestion)}
-                    className={`w-full px-6 py-0 text-left hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors ${
-                      idx === activeSuggestion ? 'bg-blue-50 cursor-pointer dark:bg-blue-900/50 text-blue-700 dark:text-blue-300' : 'text-zinc-700 dark:text-zinc-300'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between py-2 cursor-pointer">
-                      <span title={category || 'general'} className="text-base">{suggestion}</span>
-                    </div>
-                  </button>
+                  <div className='w-full bg-zinc-800'>
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => handleSuggestionClick(suggestion)}
+                      className={`w-full px-6 py-0 text-left hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors ${
+                        idx === activeSuggestion ? 'bg-blue-50 cursor-pointer dark:bg-blue-900/50 text-blue-700 dark:text-blue-300' : 'text-zinc-700 dark:text-zinc-300'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between py-2 cursor-pointer">
+                        <span title={category || 'general'} className="text-base">{suggestion}</span>
+                      </div>
+                    </button>
+                  </div>
                 );
               })}
             </div>
           )}
         </div>
         <button
-          type="submit"
-          className="bg-zinc-800 border border-zinc-100/30 text-white size-12 flex items-center justify-center rounded-md hover:bg-blue-700 cursor-pointer transition"
+          type={`${message.length > 2 ? 'submit' : ''}`}
+          className="bg-zinc-800 border border-zinc-100/30 text-white size-12 flex items-center justify-center rounded-md hover:bg-zinc-700 cursor-pointer transition"
         >
-          <i className="ri-send-plane-fill text-2xl"></i>
+          <i className={`ri-send-plane-fill text-2xl ${message.length > 1 ? 'opacity-95 scale-100' : 'opacity-30 scale-70'} transition-all duration-300 `}></i>
         </button>
         <button
           ref={btnRef}
