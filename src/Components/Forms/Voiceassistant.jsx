@@ -8,18 +8,15 @@ function Assistant() {
     link: '',
     image: '',
     file: '',
-    category: 'General'
+    category: 'general'
   });
   const [status, setStatus] = useState(null);
   const [categories, setCategories] = useState(['General']);
   const [loadingCategories, setLoadingCategories] = useState(false);
-  const [showNewCategory, setShowNewCategory] = useState(false);
   const [newCategory, setNewCategory] = useState('');
-  const [pendingNewCategory, setPendingNewCategory] = useState(null); // Track if a new category is pending submit
   const skipCategoryReload = useRef(false);
 
   useEffect(() => {
-    // Only fetch categories if not skipping due to new category add
     if (skipCategoryReload.current) {
       skipCategoryReload.current = false;
       return;
@@ -69,15 +66,7 @@ function Assistant() {
     e.preventDefault();
     setStatus('loading');
 
-    // If a new category is pending, add it to categories and submit with the current question/answer
     let submitData = { ...formData };
-    if (pendingNewCategory) {
-      // Add the new category to the categories list if not already present
-      if (!categories.some(cat => cat.toLowerCase() === pendingNewCategory.toLowerCase())) {
-        setCategories(prev => [...prev, pendingNewCategory]);
-      }
-      submitData.category = pendingNewCategory;
-    }
 
     try {
       const response = await fetch('https://server-01-v2cx.onrender.com/postassistant', {
@@ -98,7 +87,6 @@ function Assistant() {
           file: '',
           category: categories[0] || 'General'
         });
-        setPendingNewCategory(null);
       } else {
         setStatus('error');
       }
@@ -107,52 +95,61 @@ function Assistant() {
     }
   };
 
-  const handleNewCategoryChange = (e) => {
+  const handleSelectCategory = (e) => {
+    if (e.target.value === '__add_new__') {
+      // Prompt for new category, then add and select it
+      setTimeout(() => {
+        const input = document.getElementById('new-category-input');
+        if (input) input.focus();
+      }, 100);
+      setNewCategory('');
+      setFormData(prev => ({
+        ...prev,
+        category: '__add_new__'
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        category: e.target.value
+      }));
+    }
+  };
+
+  const handleNewCategoryInput = (e) => {
     setNewCategory(e.target.value);
   };
 
-  // When adding a new category, do not submit immediately, but set it as pending for the next submit
-  const handleAddCategory = (e) => {
-    e.preventDefault();
+  const handleNewCategoryKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddNewCategory();
+    }
+    if (e.key === 'Escape') {
+      setFormData(prev => ({
+        ...prev,
+        category: categories[0] || 'General'
+      }));
+      setNewCategory('');
+    }
+  };
+
+  const handleAddNewCategory = () => {
     const trimmed = newCategory.trim();
     if (
       trimmed &&
-      !categories.some(
-        cat => cat.toLowerCase() === trimmed.toLowerCase()
-      )
+      !categories.some(cat => cat.toLowerCase() === trimmed.toLowerCase())
     ) {
       setCategories(prev => [...prev, trimmed]);
       setFormData(prev => ({
         ...prev,
         category: trimmed
       }));
-      setPendingNewCategory(trimmed); // Mark this as the new category to submit with question/answer
       setNewCategory('');
-      setShowNewCategory(false);
       skipCategoryReload.current = true;
-      // Focus the select after adding new category
       setTimeout(() => {
         const select = document.getElementById('category');
         if (select) select.focus();
       }, 100);
-    }
-  };
-
-  // When switching to new category input, do not change formData.category until new category is added
-  const handleSelectCategory = (e) => {
-    if (e.target.value === '__add_new__') {
-      setShowNewCategory(true);
-      setTimeout(() => {
-        const input = document.getElementById('new-category-input');
-        if (input) input.focus();
-      }, 100);
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        category: e.target.value
-      }));
-      setShowNewCategory(false);
-      setPendingNewCategory(null); // Clear pending new category if user selects an existing one
     }
   };
 
@@ -177,7 +174,7 @@ function Assistant() {
                   Question<span className="text-red-500">*</span>
                 </label>
                 <input
-                  className="w-full border border-blue-800 bg-zinc-900/80 text-zinc-100 px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition placeholder:text-zinc-400 shadow-inner"
+                  className="w-full border border-blue-800 bg-zinc-900/80 lowercase text-zinc-100 px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition placeholder:text-zinc-400 shadow-inner"
                   type="text"
                   id="question"
                   name="question"
@@ -198,73 +195,81 @@ function Assistant() {
                 ) : (
                   <div>
                     <div className="flex gap-2 items-center">
-                      <select
-                        className="w-full border border-blue-800 bg-zinc-900/80 text-zinc-100 px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 transition placeholder:text-zinc-400 shadow-inner"
-                        id="category"
-                        name="category"
-                        value={formData.category}
-                        onChange={handleSelectCategory}
-                        required
-                        disabled={showNewCategory}
-                      >
-                        {categories.map((cat, idx) => (
-                          <option key={cat + idx} value={cat}>{cat}</option>
-                        ))}
-                        <option value="__add_new__">+ Add new category</option>
-                      </select>
-                      <button
-                        type="button"
-                        className="ml-1 px-2 py-1 rounded-lg bg-cyan-700/80 text-white text-xs font-semibold hover:bg-cyan-600 transition flex items-center gap-1"
-                        onClick={() => {
-                          setShowNewCategory(true);
-                          setTimeout(() => {
-                            const input = document.getElementById('new-category-input');
-                            if (input) input.focus();
-                          }, 100);
-                        }}
-                        aria-label="Add new category"
-                        tabIndex={-1}
-                      >
-                        <i className="ri-add-line text-lg" />
-                        New
-                      </button>
-                    </div>
-                    {showNewCategory && (
-                      <form
-                        onSubmit={handleAddCategory}
-                        className="flex items-center gap-2 mt-2 animate-fade-in"
-                        style={{ animation: 'fadeIn 0.2s' }}
-                      >
+                      {formData.category !== '__add_new__' ? (
+                        <select
+                          className="w-full border border-blue-800 bg-zinc-900/80 text-zinc-100 px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 transition placeholder:text-zinc-400 shadow-inner"
+                          id="category"
+                          name="category"
+                          value={formData.category}
+                          onChange={handleSelectCategory}
+                          required
+                        >
+                          {categories.map((cat, idx) => (
+                            <option key={cat + idx} value={cat}>{cat}</option>
+                          ))}
+                          <option value="__add_new__">+ Add new category</option>
+                        </select>
+                      ) : (
                         <input
                           id="new-category-input"
                           type="text"
-                          className="flex-1 border border-cyan-600 bg-zinc-900/80 text-zinc-100 px-3 py-1.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400 placeholder:text-zinc-400 shadow-inner"
+                          className="w-full border border-cyan-600 bg-zinc-900/80 text-zinc-100 px-3 py-1.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400 placeholder:text-zinc-400 shadow-inner"
                           placeholder="Enter new category"
                           value={newCategory}
-                          onChange={handleNewCategoryChange}
-                          autoComplete="off"
+                          onChange={handleNewCategoryInput}
+                          onKeyDown={handleNewCategoryKeyDown}
                           maxLength={32}
-                          required
+                          autoFocus
                         />
-                        <button
-                          type="submit"
-                          className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold hover:from-cyan-600 hover:to-blue-600 transition"
-                        >
-                          <i className="ri-check-line" />
-                        </button>
+                      )}
+                      {formData.category === '__add_new__' ? (
+                        <>
+                          <button
+                            type="button"
+                            className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold hover:from-cyan-600 hover:to-blue-600 transition"
+                            onClick={handleAddNewCategory}
+                            disabled={!newCategory.trim()}
+                          >
+                            <i className="ri-check-line" />
+                          </button>
+                          <button
+                            type="button"
+                            className="px-2 py-1 rounded-lg bg-zinc-700/70 text-zinc-200 hover:bg-zinc-600 transition"
+                            onClick={() => {
+                              setFormData(prev => ({
+                                ...prev,
+                                category: categories[0] || 'General'
+                              }));
+                              setNewCategory('');
+                            }}
+                            aria-label="Cancel new category"
+                          >
+                            <i className="ri-close-line" />
+                          </button>
+                        </>
+                      ) : (
                         <button
                           type="button"
-                          className="px-2 py-1 rounded-lg bg-zinc-700/70 text-zinc-200 hover:bg-zinc-600 transition"
+                          className="ml-1 px-2 py-1 rounded-lg bg-cyan-700/80 text-white text-xs font-semibold hover:bg-cyan-600 transition flex items-center gap-1"
                           onClick={() => {
-                            setShowNewCategory(false);
+                            setFormData(prev => ({
+                              ...prev,
+                              category: '__add_new__'
+                            }));
                             setNewCategory('');
+                            setTimeout(() => {
+                              const input = document.getElementById('new-category-input');
+                              if (input) input.focus();
+                            }, 100);
                           }}
-                          aria-label="Cancel new category"
+                          aria-label="Add new category"
+                          tabIndex={-1}
                         >
-                          <i className="ri-close-line" />
+                          <i className="ri-add-line text-lg" />
+                          New
                         </button>
-                      </form>
-                    )}
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
