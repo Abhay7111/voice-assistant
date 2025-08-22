@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 function Assistant() {
   const [formData, setFormData] = useState({
@@ -15,8 +15,15 @@ function Assistant() {
   const [loadingCategories, setLoadingCategories] = useState(false);
   const [showNewCategory, setShowNewCategory] = useState(false);
   const [newCategory, setNewCategory] = useState('');
+  const [pendingNewCategory, setPendingNewCategory] = useState(null); // Track if a new category is pending submit
+  const skipCategoryReload = useRef(false);
 
   useEffect(() => {
+    // Only fetch categories if not skipping due to new category add
+    if (skipCategoryReload.current) {
+      skipCategoryReload.current = false;
+      return;
+    }
     const fetchCategories = async () => {
       setLoadingCategories(true);
       try {
@@ -61,13 +68,24 @@ function Assistant() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setStatus('loading');
+
+    // If a new category is pending, add it to categories and submit with the current question/answer
+    let submitData = { ...formData };
+    if (pendingNewCategory) {
+      // Add the new category to the categories list if not already present
+      if (!categories.some(cat => cat.toLowerCase() === pendingNewCategory.toLowerCase())) {
+        setCategories(prev => [...prev, pendingNewCategory]);
+      }
+      submitData.category = pendingNewCategory;
+    }
+
     try {
       const response = await fetch('https://server-01-v2cx.onrender.com/postassistant', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(submitData)
       });
       if (response.ok) {
         setStatus('success');
@@ -80,6 +98,7 @@ function Assistant() {
           file: '',
           category: categories[0] || 'General'
         });
+        setPendingNewCategory(null);
       } else {
         setStatus('error');
       }
@@ -92,6 +111,7 @@ function Assistant() {
     setNewCategory(e.target.value);
   };
 
+  // When adding a new category, do not submit immediately, but set it as pending for the next submit
   const handleAddCategory = (e) => {
     e.preventDefault();
     const trimmed = newCategory.trim();
@@ -106,11 +126,19 @@ function Assistant() {
         ...prev,
         category: trimmed
       }));
+      setPendingNewCategory(trimmed); // Mark this as the new category to submit with question/answer
       setNewCategory('');
       setShowNewCategory(false);
+      skipCategoryReload.current = true;
+      // Focus the select after adding new category
+      setTimeout(() => {
+        const select = document.getElementById('category');
+        if (select) select.focus();
+      }, 100);
     }
   };
 
+  // When switching to new category input, do not change formData.category until new category is added
   const handleSelectCategory = (e) => {
     if (e.target.value === '__add_new__') {
       setShowNewCategory(true);
@@ -124,6 +152,7 @@ function Assistant() {
         category: e.target.value
       }));
       setShowNewCategory(false);
+      setPendingNewCategory(null); // Clear pending new category if user selects an existing one
     }
   };
 
