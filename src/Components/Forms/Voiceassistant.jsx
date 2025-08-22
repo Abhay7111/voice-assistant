@@ -13,6 +13,8 @@ function Assistant() {
   const [status, setStatus] = useState(null);
   const [categories, setCategories] = useState(['General']);
   const [loadingCategories, setLoadingCategories] = useState(false);
+  const [showNewCategory, setShowNewCategory] = useState(false);
+  const [newCategory, setNewCategory] = useState('');
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -86,6 +88,45 @@ function Assistant() {
     }
   };
 
+  const handleNewCategoryChange = (e) => {
+    setNewCategory(e.target.value);
+  };
+
+  const handleAddCategory = (e) => {
+    e.preventDefault();
+    const trimmed = newCategory.trim();
+    if (
+      trimmed &&
+      !categories.some(
+        cat => cat.toLowerCase() === trimmed.toLowerCase()
+      )
+    ) {
+      setCategories(prev => [...prev, trimmed]);
+      setFormData(prev => ({
+        ...prev,
+        category: trimmed
+      }));
+      setNewCategory('');
+      setShowNewCategory(false);
+    }
+  };
+
+  const handleSelectCategory = (e) => {
+    if (e.target.value === '__add_new__') {
+      setShowNewCategory(true);
+      setTimeout(() => {
+        const input = document.getElementById('new-category-input');
+        if (input) input.focus();
+      }, 100);
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        category: e.target.value
+      }));
+      setShowNewCategory(false);
+    }
+  };
+
   return (
     <div className='w-full h-full overflow-auto'>
       <div className="w-full max-w-[700px] p-3 mx-auto bg-gradient-to-br from-blue-950 via-zinc-900 to-zinc-800 rounded-xl shadow-2xl mt-0 border border-blue-900/40 relative overflow-hidden">
@@ -126,18 +167,76 @@ function Assistant() {
                 {loadingCategories ? (
                   <div className="text-zinc-400 text-sm py-2">Loading categories...</div>
                 ) : (
-                  <select
-                    className="w-full border border-blue-800 bg-zinc-900/80 text-zinc-100 px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 transition placeholder:text-zinc-400 shadow-inner"
-                    id="category"
-                    name="category"
-                    value={formData.category}
-                    onChange={handleChange}
-                    required
-                  >
-                    {categories.map((cat, idx) => (
-                      <option key={cat + idx} value={cat}>{cat}</option>
-                    ))}
-                  </select>
+                  <div>
+                    <div className="flex gap-2 items-center">
+                      <select
+                        className="w-full border border-blue-800 bg-zinc-900/80 text-zinc-100 px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 transition placeholder:text-zinc-400 shadow-inner"
+                        id="category"
+                        name="category"
+                        value={formData.category}
+                        onChange={handleSelectCategory}
+                        required
+                        disabled={showNewCategory}
+                      >
+                        {categories.map((cat, idx) => (
+                          <option key={cat + idx} value={cat}>{cat}</option>
+                        ))}
+                        <option value="__add_new__">+ Add new category</option>
+                      </select>
+                      <button
+                        type="button"
+                        className="ml-1 px-2 py-1 rounded-lg bg-cyan-700/80 text-white text-xs font-semibold hover:bg-cyan-600 transition flex items-center gap-1"
+                        onClick={() => {
+                          setShowNewCategory(true);
+                          setTimeout(() => {
+                            const input = document.getElementById('new-category-input');
+                            if (input) input.focus();
+                          }, 100);
+                        }}
+                        aria-label="Add new category"
+                        tabIndex={-1}
+                      >
+                        <i className="ri-add-line text-lg" />
+                        New
+                      </button>
+                    </div>
+                    {showNewCategory && (
+                      <form
+                        onSubmit={handleAddCategory}
+                        className="flex items-center gap-2 mt-2 animate-fade-in"
+                        style={{ animation: 'fadeIn 0.2s' }}
+                      >
+                        <input
+                          id="new-category-input"
+                          type="text"
+                          className="flex-1 border border-cyan-600 bg-zinc-900/80 text-zinc-100 px-3 py-1.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400 placeholder:text-zinc-400 shadow-inner"
+                          placeholder="Enter new category"
+                          value={newCategory}
+                          onChange={handleNewCategoryChange}
+                          autoComplete="off"
+                          maxLength={32}
+                          required
+                        />
+                        <button
+                          type="submit"
+                          className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold hover:from-cyan-600 hover:to-blue-600 transition"
+                        >
+                          <i className="ri-check-line" />
+                        </button>
+                        <button
+                          type="button"
+                          className="px-2 py-1 rounded-lg bg-zinc-700/70 text-zinc-200 hover:bg-zinc-600 transition"
+                          onClick={() => {
+                            setShowNewCategory(false);
+                            setNewCategory('');
+                          }}
+                          aria-label="Cancel new category"
+                        >
+                          <i className="ri-close-line" />
+                        </button>
+                      </form>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
