@@ -150,6 +150,172 @@ function markdownToSpeechText(markdown) {
   return text;
 }
 
+// Add this math calculation function after the markdownToSpeechText function
+const calculateMath = (expression) => {
+  try {
+    // Clean the expression - remove extra spaces and common words
+    let cleanExpr = expression
+      .toLowerCase()
+      .replace(/what is|calculate|compute|solve|evaluate/gi, '')
+      .replace(/plus/g, '+')
+      .replace(/minus/g, '-')
+      .replace(/times|multiplied by/g, '*')
+      .replace(/divided by|divide/g, '/')
+      .replace(/equals|equal to/g, '=')
+      .replace(/\s+/g, '')
+      .trim();
+
+    // Handle multiple operations with same precedence
+    // First, handle addition and subtraction
+    if (cleanExpr.includes('+') || cleanExpr.includes('-')) {
+      // Split by + and - but keep the operators
+      const parts = cleanExpr.split(/([+-])/);
+      if (parts.length >= 3) {
+        let result = parseFloat(parts[0]);
+        let expression = parts[0];
+        
+        for (let i = 1; i < parts.length; i += 2) {
+          if (i + 1 < parts.length) {
+            const operator = parts[i];
+            const operand = parseFloat(parts[i + 1]);
+            
+            if (operator === '+') {
+              result += operand;
+            } else if (operator === '-') {
+              result -= operand;
+            }
+            
+            expression += ` ${operator} ${parts[i + 1]}`;
+          }
+        }
+        
+        return {
+          expression: expression,
+          result: result,
+          formattedResult: Number.isInteger(result) ? result.toString() : result.toFixed(2)
+        };
+      }
+    }
+
+    // Handle multiplication and division
+    if (cleanExpr.includes('*') || cleanExpr.includes('/')) {
+      const parts = cleanExpr.split(/([*/])/);
+      if (parts.length >= 3) {
+        let result = parseFloat(parts[0]);
+        let expression = parts[0];
+        
+        for (let i = 1; i < parts.length; i += 2) {
+          if (i + 1 < parts.length) {
+            const operator = parts[i];
+            const operand = parseFloat(parts[i + 1]);
+            
+            if (operator === '*') {
+              result *= operand;
+            } else if (operator === '/') {
+              if (operand === 0) {
+                return 'Error: Division by zero is not allowed';
+              }
+              result /= operand;
+            }
+            
+            expression += ` ${operator} ${parts[i + 1]}`;
+          }
+        }
+        
+        return {
+          expression: expression,
+          result: result,
+          formattedResult: Number.isInteger(result) ? result.toString() : result.toFixed(2)
+        };
+      }
+    }
+
+    // Handle mixed operations (basic implementation - evaluates left to right)
+    if ((cleanExpr.includes('+') || cleanExpr.includes('-')) && 
+        (cleanExpr.includes('*') || cleanExpr.includes('/'))) {
+      const parts = cleanExpr.split(/([+\-*/])/);
+      if (parts.length >= 3) {
+        let result = parseFloat(parts[0]);
+        let expression = parts[0];
+        
+        for (let i = 1; i < parts.length; i += 2) {
+          if (i + 1 < parts.length) {
+            const operator = parts[i];
+            const operand = parseFloat(parts[i + 1]);
+            
+            switch (operator) {
+              case '+':
+                result += operand;
+                break;
+              case '-':
+                result -= operand;
+                break;
+              case '*':
+                result *= operand;
+                break;
+              case '/':
+                if (operand === 0) {
+                  return 'Error: Division by zero is not allowed';
+                }
+                result /= operand;
+                break;
+            }
+            
+            expression += ` ${operator} ${parts[i + 1]}`;
+          }
+        }
+        
+        return {
+          expression: expression,
+          result: result,
+          formattedResult: Number.isInteger(result) ? result.toString() : result.toFixed(2)
+        };
+      }
+    }
+
+    // Original single operation handling
+    const mathRegex = /^(\d+(?:\.\d+)?)\s*([+\-*/])\s*(\d+(?:\.\d+)?)$/;
+    const match = cleanExpr.match(mathRegex);
+    
+    if (!match) {
+      return null;
+    }
+
+    const [, num1, operator, num2] = match;
+    const a = parseFloat(num1);
+    const b = parseFloat(num2);
+
+    let result;
+    switch (operator) {
+      case '+':
+        result = a + b;
+        break;
+      case '-':
+        result = a - b;
+        break;
+      case '*':
+        result = a * b;
+        break;
+      case '/':
+        if (b === 0) {
+          return 'Error: Division by zero is not allowed';
+        }
+        result = a / b;
+        break;
+      default:
+        return null;
+    }
+
+    return {
+      expression: `${a} ${operator} ${b}`,
+      result: result,
+      formattedResult: Number.isInteger(result) ? result.toString() : result.toFixed(2)
+    };
+  } catch (error) {
+    return null;
+  }
+};
+
 const VoiceAssistant = () => {
   const [message, setMessage] = useState('');
   const [listening, setListening] = useState(false);
@@ -254,6 +420,26 @@ const VoiceAssistant = () => {
       setShowGoogleButton(false);
       setSelectedCategories(['all']); // Reset to all categories
       setShowCategoryButton(false);
+      return;
+    }
+
+    // Handle math calculations
+    const mathResult = calculateMath(msg);
+    if (mathResult) {
+      if (mathResult === 'Error: Division by zero is not allowed') {
+        const errorMsg = 'Error: Division by zero is not allowed';
+        setChatHistory(prev => [...prev, { type: 'bot', text: errorMsg }]);
+        if (!fromInput) speak(errorMsg);
+        setGoogleSearchQuery('');
+        setShowGoogleButton(false);
+        return;
+      }
+      
+      const response = `${mathResult.expression} = ${mathResult.formattedResult}`;
+      setChatHistory(prev => [...prev, { type: 'bot', text: response }]);
+      if (!fromInput) speak(response);
+      setGoogleSearchQuery('');
+      setShowGoogleButton(false);
       return;
     }
 
@@ -759,7 +945,7 @@ const VoiceAssistant = () => {
               </p>
               {!Datacount == 0 && <p className='px-2 py-1 rounded-md border border-zinc-700/50 w-full max-w-[85%] text-zinc-400 '>If you're willing to guide me, I’d be truly grateful. Learning from you would be an excellent opportunity to grow, improve my skills, and contribute more effectively.</p>}
               {!Datacount == 0 && <p className='px-2 py-1 rounded-md border border-zinc-700/50 w-full max-w-[85%] text-zinc-400 '>I’m eager to learn more. I would sincerely appreciate your guidance and support in <NavLink to={`/train`} className={`text-blue-500/60`}>helping</NavLink> me grow.</p>}
-              {Datacount <= 99 && <p className='px-2 py-2 rounded-md border border-zinc-700/50 w-full max-w-[85%] text-zinc-400 flex flex-wrap gap-2 leading-4 '>I have knowledge on this : {Questions}</p>}
+              {Datacount <= 99 && <p className='px-2 py-2 rounded-md border border-zinc-700/50 w-full max-w-[85%] text-zinc-400 flex flex-wrap gap-2 leading-4 '>I have knowledge on this : <span>{Questions.length + 1}{Questions}</span></p>}
             </div>
           </div>
         )}
@@ -770,7 +956,7 @@ const VoiceAssistant = () => {
           >
             <div
               className={`max-w-[95%] px-3 py-0.5 rounded-lg break-words text-sm ${
-                chat.type === 'user' ? 'bg-transparent border border-zinc-700/20 text-zinc-400 min-h-10 flex items-center justify-center' : 'bg-transparent border border-zinc-700/30 py-2.5 text-zinc-200'
+                chat.type === 'user' ? 'bg-transparent text-zinc-400 min-h-10 flex items-center justify-center' : 'bg-transparent border border-zinc-700/20 py-1 text-zinc-200 text-wrap break-words overflow-hidden'
               }`}
             >
               <div className="relative mb-1">
@@ -778,7 +964,7 @@ const VoiceAssistant = () => {
                   <div className='flex items-start justify-start gap-2'>
                     <div className="markdown">
                       {chat.type === 'user' ? (
-                        <span>{chat.text}</span>
+                        <span className='text-wrap'>{chat.text}</span>
                       ) : (
                         <TypewriterMarkdown 
                           text={chat.text} 
@@ -916,8 +1102,8 @@ const VoiceAssistant = () => {
           
           {/* Autocomplete Suggestions */}
           {showSuggestions && suggestions.length > 0 && (
-            <div className="absolute bottom-full left-0 right-0 mb-3 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-2xl shadow-2xl max-h-96 overflow-y-auto backdrop-blur-xl">
-              {suggestions.map((suggestion, idx) => {
+            <div className="absolute z-50 bottom-full left-0 right-0 mb-3 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-2xl h-fit max-h-96 overflow-y-auto backdrop-blur-xl">
+              {suggestions.slice(0, 5).map((suggestion, idx) => {
                 // Find the original data item to get category info
                 const originalItem = data.find(item => item.question === suggestion);
                 const category = originalItem?.category || 'general';
@@ -943,7 +1129,7 @@ const VoiceAssistant = () => {
           )}
         </div>
         <button
-          type={`${message.length > 2 ? 'submit' : ''}`}
+          type="submit"
           className="bg-zinc-800 border border-zinc-100/30 text-white size-12 flex items-center justify-center rounded-md hover:bg-zinc-700 cursor-pointer transition"
         >
           <i className={`ri-send-plane-fill text-2xl ${message.length > 1 ? 'opacity-95 scale-100' : 'opacity-30 scale-70'} transition-all duration-300 `}></i>
