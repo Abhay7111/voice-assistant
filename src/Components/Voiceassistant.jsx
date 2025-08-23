@@ -837,7 +837,7 @@ const VoiceAssistant = () => {
   }, [chatHistory, googleSearchQuery, showCategory, showCodeCategory, showNewCodeForm]);
   if (loading) return <div className="text-white p-4 w-full h-full bg-zinc-950 flex items-center justify-center"><div className='size-10 flex items-center justify-center animate-spin bg-transparent'><i className='text-xl font-medium ri-loader-4-line'></i></div></div>;
   return (
-    <div className="h-full w-full bg-zinc-900 flex flex-col justify-end p-2">
+    <div className="h-full w-full bg-zinc-800 flex flex-col justify-end p-2">
       {/* Nav */}
       <div className='w-full min-h-10 mb-3 bg-transparent text-zinc-300 px-3 rounded-md border border-zinc-700/30 flex items-center justify-between'>
         <div className='w-fit'><h1 className='text-2xl font-medium'>Gaama.<span className='text-sm font-mediu lowercase'>AI</span></h1></div>
@@ -935,7 +935,7 @@ const VoiceAssistant = () => {
 
               {/* Copy to clipboard button for assistant messages */}
               {chat.type !== 'user' && (
-                <div id='testing' className='flex items-center w-full h-fit bg-zinc-900 gap-2 rounded-md'>
+                <div id='testing' className='flex items-center w-full h-fit bg-transparent gap-2 rounded-md'>
                   {/* Copy button */}
                   <span>
                     <div className="h-fit w-full flex items-center justify-start gap-2 mt-1">
@@ -991,9 +991,9 @@ const VoiceAssistant = () => {
         <div ref={chatEndRef} />
       </div>
       {/* Category List */}
-      {showCategory && categories.length > 0 && (
-        <div className="mb-2 w-fit max-h-96 rounded-xl border border-zinc-700 bg-zinc-900 shadow-lg z-50">
-          <div className="p-2" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+      {/* {showCategory && categories.length > 0 && (
+        <div className="mb-2 w-full max-h-96 rounded-xl border overflow-auto border-zinc-700 bg-zinc-800 shadow-lg z-50">
+          <div className="p-2">
             <div className=" text-zinc-300/70 font-medium text-base">
               I have {categories.length} {categories.length === 1 ? 'Category' : 'Categories'}
             </div>
@@ -1004,7 +1004,7 @@ const VoiceAssistant = () => {
                   <>
                     <label
                     key={cat + idx}
-                    className={`flex items-center gap-2 hover:bg-zinc-700/30 text-start cursor-pointer rounded text-xs transition line-clamp-1 ${
+                    className={`flex items-center gap-2 hover:bg-zinc-700/30 text-start cursor-pointer rounded text-sm transition line-clamp-1 ${
                       isSelected ? 'text-zinc-200' : 'text-zinc-500'
                     }`}
                   >
@@ -1022,19 +1022,19 @@ const VoiceAssistant = () => {
             </div>
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Code Category Display */}
       {showCodeCategory && (
-        <div className="mb-2 w-full max-h-96 rounded-xl border border-zinc-700 bg-zinc-900 shadow-lg z-50">
-          <div className="p-4" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+        <div className="mb-2 w-full max-w-[700px] left-1/2 -translate-x-1/2 bottom-15 absolute max-h-96 rounded-xl overflow-auto border border-zinc-700 bg-zinc-800/30 backdrop-blur shadow-lg z-50">
+          <div className="p-4">
             <div className="text-zinc-300/70 font-medium text-base mb-3 flex items-center gap-2">
               <i className="ri-code-s-slash-line text-lg"></i>
               Code Category - All Code Related Questions and Answers
             </div>
             <div className="space-y-3">
               {data.filter(item => item.category === 'code').map((item, idx) => (
-                <div key={idx} className="border border-zinc-700/50 rounded-lg p-3 bg-zinc-800/50">
+                <div key={idx} className="border border-zinc-700/50 rounded-lg p-3 bg-zinc-800">
                   <div className="text-zinc-200 font-medium mb-2">
                     <i className="ri-question-line mr-2"></i>
                     {item.question}
@@ -1163,11 +1163,11 @@ const VoiceAssistant = () => {
       )}
       {/* Google Search Results */}
       {googleSearchQuery && (
-        <div className="mb-5 w-full max-w-full rounded-2xl overflow-hidden border border-zinc-700 bg-zinc-900 h-[95vh]" >
+        <div className="mb-5 w-full max-w-full rounded-2xl overflow-hidden border border-zinc-700 bg-zinc-800 h-[95vh]" >
           <iframe
             title="Google Search"
             src={`https://www.bing.com/search?q=${encodeURIComponent(googleSearchQuery)}`}
-            style={{ width: '100%', height: '100%', border: 'none' }}
+            style={{ width: '100%', height: '100%', border: 'none', backgroundColor: '#27272a' }}
             sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
           />
         </div>
@@ -1181,7 +1181,7 @@ const VoiceAssistant = () => {
             onChange={handleInputChange}
             onKeyDown={handleInputKeyDown}
             placeholder={`Ask me ${selectedCategories.length === 1 ? 'anything' : 'on this'} ${!selectedCategories.includes('all') ? ` (${selectedCategories.join(', ')})` : ''} ${selectedCategories.length === 1 ? '' : 'topics'}... (or type /code, /newcode)`}
-            className="w-full px-6 py-2.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 rounded-lg focus:outline-none focus:ring-4 focus:ring-zinc-500/20 dark:focus:ring-zinc-400/20 focus:border-transparent transition-all duration-300 text-zinc-700 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-500 text-lg shadow-lg"
+            className="w-full px-6 h-12 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 rounded-lg focus:outline-none focus:ring-4 focus:ring-zinc-500/20 dark:focus:ring-zinc-400/20 focus:border-transparent transition-all duration-300 text-zinc-700 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-500 text-sm shadow-md focus:shadow-zinc-400"
             autoComplete="off"
           />
           
@@ -1189,19 +1189,19 @@ const VoiceAssistant = () => {
           
           {/* Autocomplete Suggestions */}
           {showSuggestions && suggestions.length > 0 && (
-            <div className="absolute z-50 bottom-full left-0 right-0 mb-3 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-2xl h-fit max-h-96 overflow-y-auto backdrop-blur-xl">
+            <div className="absolute z-50 bottom-full left-0 right-0 mb-3 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-2xl h-fit max-h-96 overflow-y-auto backdrop-blur">
               {suggestions.slice(0, 5).map((suggestion, idx) => {
                 // Find the original data item to get category info
                 const originalItem = data.find(item => item.question === suggestion);
                 const category = originalItem?.category || 'general';
                 
                 return (
-                  <div className='w-full bg-zinc-800'>
+                  <div className='w-full'>
                     <button
                       key={idx}
                       type="button"
                       onClick={() => handleSuggestionClick(suggestion)}
-                      className={`w-full px-6 py-0 text-left hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors ${
+                      className={`w-full px-6 py-0 text-left hover:bg-zinc-50 dark:hover:bg-zinc-700/30 transition-colors ${
                         idx === activeSuggestion ? 'bg-blue-50 cursor-pointer dark:bg-blue-900/50 text-blue-700 dark:text-blue-300' : 'text-zinc-700 dark:text-zinc-300'
                       }`}
                     >
