@@ -336,6 +336,16 @@ const VoiceAssistant = () => {
   const [selectedCategories, setSelectedCategories] = useState(['all']); // Array of checked categories
   const [showCategoryButton, setShowCategoryButton] = useState(false);
 
+  // Code commands state
+  const [showCodeCategory, setShowCodeCategory] = useState(false);
+  const [showNewCodeForm, setShowNewCodeForm] = useState(false);
+  const [showAnswerPreview, setShowAnswerPreview] = useState(false);
+  const [newCodeForm, setNewCodeForm] = useState({
+    question: '',
+    answer: '',
+    category: 'code'
+  });
+
   // Loading state management
   const [dataLoaded, setDataLoaded] = useState(false);
   const [minLoadingComplete, setMinLoadingComplete] = useState(false);
@@ -420,6 +430,30 @@ const VoiceAssistant = () => {
       setShowGoogleButton(false);
       setSelectedCategories(['all']); // Reset to all categories
       setShowCategoryButton(false);
+      setShowCodeCategory(false);
+      setShowNewCodeForm(false);
+      return;
+    }
+
+    // Handle /code command - show code category
+    if (lowerMsg === '/code') {
+      setShowCodeCategory(true);
+      setShowNewCodeForm(false);
+      setShowCategory(false);
+      setShowCategoryButton(false);
+      if (!fromInput) speak('Showing code category.');
+      setChatHistory(prev => [...prev, { type: 'bot', text: 'Showing code category. Here are all the code-related questions and answers:' }]);
+      return;
+    }
+
+    // Handle /newcode command - show new code form
+    if (lowerMsg === '/newcode') {
+      setShowNewCodeForm(true);
+      setShowCodeCategory(false);
+      setShowCategory(false);
+      setShowCategoryButton(false);
+      if (!fromInput) speak('Opening new code form.');
+      setChatHistory(prev => [...prev, { type: 'bot', text: 'Opening new code form. Please fill in the question, answer, and category fields.' }]);
       return;
     }
 
@@ -616,14 +650,119 @@ const VoiceAssistant = () => {
         setShowCategory(true);
         return;
       }
+      if (message.trim() === '/code') {
+        setShowCodeCategory(true);
+        setShowNewCodeForm(false);
+        setShowCategory(false);
+        setShowCategoryButton(false);
+        setMessage('');
+        return;
+      }
+      if (message.trim() === '/newcode') {
+        setShowNewCodeForm(true);
+        setShowCodeCategory(false);
+        setShowCategory(false);
+        setShowCategoryButton(false);
+        setMessage('');
+        return;
+      }
       lastCommandFromInputRef.current = true;
       takeCommand(message, { fromInput: true });
       setMessage('');
       setShowCategory(false);
+      setShowCodeCategory(false);
+      setShowNewCodeForm(false);
       setSuggestions([]);
       setShowSuggestions(false);
       setActiveSuggestion(-1);
     }
+  };
+
+  // Handle new code form input changes
+  const handleNewCodeFormChange = (field, value) => {
+    setNewCodeForm(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  // Handle new code form submission
+  const handleNewCodeFormSubmit = async (e) => {
+    e.preventDefault();
+    if (newCodeForm.question.trim() && newCodeForm.answer.trim()) {
+      try {
+        // Prepare the data for API submission
+        const submitData = {
+          question: newCodeForm.question.trim(),
+          answer: newCodeForm.answer.trim(),
+          category: newCodeForm.category || 'code',
+          open: false,
+          link: '',
+          image: '',
+          file: ''
+        };
+
+        // Send data to API
+        const response = await fetch('https://server-01-v2cx.onrender.com/postassistant', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(submitData)
+        });
+
+        if (response.ok) {
+          // Add to local data for immediate display
+          setData(prev => [...prev, submitData]);
+          setChatHistory(prev => [...prev, { 
+            type: 'bot', 
+            text: `✅ New code item added successfully!\n\n**Question:** ${submitData.question}\n\n**Answer:** ${submitData.answer}\n\n**Category:** ${submitData.category}` 
+          }]);
+          
+          // Reset form
+          setNewCodeForm({
+            question: '',
+            answer: '',
+            category: 'code'
+          });
+          setShowNewCodeForm(false);
+          setShowAnswerPreview(false);
+          
+          speak('New code item added successfully to the database.');
+        } else {
+          throw new Error('API request failed');
+        }
+      } catch (error) {
+        console.error('Error adding new code item:', error);
+        setChatHistory(prev => [...prev, { 
+          type: 'bot', 
+          text: '❌ Error adding new code item. Please try again or check your connection.' 
+        }]);
+        speak('Error adding new code item. Please try again.');
+      }
+    } else {
+      setChatHistory(prev => [...prev, { 
+        type: 'bot', 
+        text: '⚠️ Please fill in both question and answer fields.' 
+      }]);
+      speak('Please fill in both question and answer fields.');
+    }
+  };
+
+  // Cancel new code form
+  const handleCancelNewCodeForm = () => {
+    setShowNewCodeForm(false);
+    setShowAnswerPreview(false);
+    setNewCodeForm({
+      question: '',
+      answer: '',
+      category: 'code'
+    });
+    setChatHistory(prev => [...prev, { 
+      type: 'bot', 
+      text: 'New code form cancelled.' 
+    }]);
+    speak('New code form cancelled.');
   };
   // Open Google search in a new tab
   const handleOpenGoogle = () => {
@@ -911,7 +1050,7 @@ const VoiceAssistant = () => {
     if (chatEndRef.current) {
       chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [chatHistory, googleSearchQuery, showCategory]);
+  }, [chatHistory, googleSearchQuery, showCategory, showCodeCategory, showNewCodeForm]);
   if (loading) return <div className="text-white p-4 w-full h-full bg-zinc-950 flex items-center justify-center"><div className='size-10 flex items-center justify-center animate-spin bg-transparent'><i className='text-xl font-medium ri-loader-4-line'></i></div></div>;
   return (
     <div className="h-full w-full bg-zinc-900 flex flex-col justify-end p-2">
@@ -1074,6 +1213,143 @@ const VoiceAssistant = () => {
           </div>
         </div>
       )}
+
+      {/* Code Category Display */}
+      {showCodeCategory && (
+        <div className="mb-2 w-full max-h-96 rounded-xl border border-zinc-700 bg-zinc-900 shadow-lg z-50">
+          <div className="p-4" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+            <div className="text-zinc-300/70 font-medium text-base mb-3 flex items-center gap-2">
+              <i className="ri-code-s-slash-line text-lg"></i>
+              Code Category - All Code Related Questions and Answers
+            </div>
+            <div className="space-y-3">
+              {data.filter(item => item.category === 'code').map((item, idx) => (
+                <div key={idx} className="border border-zinc-700/50 rounded-lg p-3 bg-zinc-800/50">
+                  <div className="text-zinc-200 font-medium mb-2">
+                    <i className="ri-question-line mr-2"></i>
+                    {item.question}
+                  </div>
+                  <div className="text-zinc-400 text-sm whitespace-pre-wrap">
+                    {item.answer}
+                  </div>
+                </div>
+              ))}
+              {data.filter(item => item.category === 'code').length === 0 && (
+                <div className="text-zinc-500 text-center py-4">
+                  No code items found. Use /newcode to add your first code item!
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* New Code Form */}
+      {showNewCodeForm && (
+        <div className="mb-2 w-full max-w-2xl rounded-xl border border-zinc-700 bg-zinc-900 shadow-lg z-50">
+          <div className="p-4">
+            <div className="text-zinc-300/70 font-medium text-base mb-4 flex items-center gap-2">
+              <i className="ri-add-line text-lg"></i>
+              Add New Code Item
+            </div>
+            <form onSubmit={handleNewCodeFormSubmit} className="space-y-4">
+              <div>
+                <label className="block text-zinc-300 text-sm font-medium mb-2">
+                  Question:
+                </label>
+                <input
+                  type="text"
+                  value={newCodeForm.question}
+                  onChange={(e) => handleNewCodeFormChange('question', e.target.value)}
+                  placeholder="Enter your question..."
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-transparent text-zinc-200 placeholder-zinc-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-zinc-300 text-sm font-medium mb-2">
+                  Answer:
+                </label>
+                <textarea
+                  value={newCodeForm.answer}
+                  onChange={(e) => handleNewCodeFormChange('answer', e.target.value)}
+                  placeholder="Enter your answer (supports markdown)..."
+                  rows={6}
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-transparent text-zinc-200 placeholder-zinc-500 resize-vertical"
+                  required
+                />
+                {newCodeForm.answer.trim().split(/\s+/).length >= 2 && (
+                  <>
+                    <button
+                      type="button"
+                      className="mt-2 flex items-center gap-1 px-3 py-1 bg-cyan-700 hover:bg-cyan-800 text-white rounded transition text-sm"
+                      onClick={() => setShowAnswerPreview(true)}
+                    >
+                      <i className="ri-eye-line"></i>
+                      Show Markdown Output
+                    </button>
+                    {showAnswerPreview && (
+                      <div
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+                        onClick={() => setShowAnswerPreview(false)}
+                      >
+                        <div
+                          className="bg-zinc-900 border border-zinc-700 rounded-xl p-6 max-w-lg w-full shadow-2xl relative"
+                          onClick={e => e.stopPropagation()}
+                        >
+                          <button
+                            className="absolute top-2 right-2 text-zinc-400 hover:text-zinc-100"
+                            onClick={() => setShowAnswerPreview(false)}
+                            type="button"
+                          >
+                            <i className="ri-close-line text-2xl"></i>
+                          </button>
+                          <div className="mb-2 text-zinc-300 font-semibold text-lg flex items-center gap-2">
+                            <i className="ri-eye-line"></i>
+                            Markdown Preview
+                          </div>
+                          <div className="prose prose-invert max-w-none text-zinc-100">
+                            <Markdown>{newCodeForm.answer}</Markdown>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+              <div>
+                <label className="block text-zinc-300 text-sm font-medium mb-2">
+                  Category:
+                </label>
+                <input
+                  type="text"
+                  value={newCodeForm.category}
+                  onChange={(e) => handleNewCodeFormChange('category', e.target.value)}
+                  placeholder="code"
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-transparent text-zinc-200 placeholder-zinc-500"
+                />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-colors duration-200 flex items-center gap-2"
+                >
+                  <i className="ri-save-line"></i>
+                  Add Code Item
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCancelNewCodeForm}
+                  className="px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-zinc-200 rounded-lg transition-colors duration-200 flex items-center gap-2"
+                >
+                  <i className="ri-close-line"></i>
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
       {/* Google Search Results */}
       {googleSearchQuery && (
         <div className="mb-5 w-full max-w-full rounded-2xl overflow-hidden border border-zinc-700 bg-zinc-900 h-[95vh]" >
@@ -1093,7 +1369,7 @@ const VoiceAssistant = () => {
             value={message}
             onChange={handleInputChange}
             onKeyDown={handleInputKeyDown}
-            placeholder={`Ask me ${selectedCategories.length === 1 ? 'anything' : 'on this'} ${!selectedCategories.includes('all') ? ` (${selectedCategories.join(', ')})` : ''} ${selectedCategories.length === 1 ? '' : 'topics'}...`}
+            placeholder={`Ask me ${selectedCategories.length === 1 ? 'anything' : 'on this'} ${!selectedCategories.includes('all') ? ` (${selectedCategories.join(', ')})` : ''} ${selectedCategories.length === 1 ? '' : 'topics'}... (or type /code, /newcode)`}
             className="w-full px-6 py-2.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 rounded-lg focus:outline-none focus:ring-4 focus:ring-zinc-500/20 dark:focus:ring-zinc-400/20 focus:border-transparent transition-all duration-300 text-zinc-700 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-500 text-lg shadow-lg"
             autoComplete="off"
           />
