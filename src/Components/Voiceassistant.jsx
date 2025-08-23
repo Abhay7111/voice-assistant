@@ -3,116 +3,31 @@ import axios from 'axios';
 import Markdown from 'react-markdown';
 import { NavLink } from 'react-router-dom';
 
-// Typewriter Component - Auto-detect animation type based on word count
-const TypewriterText = ({ text, speed = 80, delay = 0, onComplete }) => {
-  const [displayText, setDisplayText] = useState('');
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isTyping, setIsTyping] = useState(false);
-  const apiTimeoutRef = useRef(null);
-  const apiFallbackSpokenRef = useRef(false);
-
-  const dataLoadedRef = useRef(false);
-  const lastCommandFromInputRef = useRef(false);
-  const prefetchingRef = useRef(false);
-  const Datacount = data.length;
-
-  useEffect(() => {
-    if (!text) return;
-
-    setIsTyping(true);
-    setDisplayText('');
-    setCurrentIndex(0);
-
-    const timer = setTimeout(() => {
-      // Count words in the text
-      const wordCount = text.trim().split(/\s+/).length;
-      
-      // Choose animation type based on word count
-      const animateBy = wordCount <= 40 ? 'words' : 'lines';
-      
-      let textUnits;
-      if (animateBy === 'words') {
-        textUnits = text.split(' ');
-      } else {
-        textUnits = text.split('\n');
-      }
-
-      const interval = setInterval(() => {
-        setCurrentIndex(prev => {
-          if (prev >= textUnits.length) {
-            clearInterval(interval);
-            setIsTyping(false);
-            if (onComplete) onComplete();
-            return prev;
-          }
-          
-          let newText;
-          if (animateBy === 'words') {
-            newText = textUnits.slice(0, prev + 1).join(' ');
-          } else {
-            newText = textUnits.slice(0, prev + 1).join('\n');
-          }
-          
-          setDisplayText(newText);
-          return prev + 1;
-        });
-      }, speed);
-
-      return () => clearInterval(interval);
-    }, delay);
-
-    return () => clearTimeout(timer);
-  }, [text, speed, delay, onComplete]);
-
-  return (
-    <span className="typewriter-text">
-      {displayText}
-    </span>
-  );
-};
-
 // Typewriter Markdown Component - Auto-detect animation type based on word count
 const TypewriterMarkdown = ({ text, speed = 80, delay = 0 }) => {
   const [displayText, setDisplayText] = useState('');
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isTyping, setIsTyping] = useState(false);
 
   useEffect(() => {
     if (!text) return;
 
-    setIsTyping(true);
     setDisplayText('');
     setCurrentIndex(0);
 
     const timer = setTimeout(() => {
-      // Count words in the text
       const wordCount = text.trim().split(/\s+/).length;
-      
-      // Choose animation type based on word count
       const animateBy = wordCount <= 40 ? 'words' : 'lines';
-      
-      let textUnits;
-      if (animateBy === 'words') {
-        textUnits = text.split(' ');
-      } else {
-        textUnits = text.split('\n');
-      }
+      let textUnits = animateBy === 'words' ? text.split(' ') : text.split('\n');
 
       const interval = setInterval(() => {
         setCurrentIndex(prev => {
           if (prev >= textUnits.length) {
             clearInterval(interval);
-            setIsTyping(false);
             return prev;
           }
-          
-          let newText;
-          if (animateBy === 'words') {
-            newText = textUnits.slice(0, prev + 1).join(' ');
-          } else {
-            newText = textUnits.slice(0, prev + 1).join('\n');
-          }
-          
+          let newText = animateBy === 'words'
+            ? textUnits.slice(0, prev + 1).join(' ')
+            : textUnits.slice(0, prev + 1).join('\n');
           setDisplayText(newText);
           return prev + 1;
         });
@@ -150,10 +65,9 @@ function markdownToSpeechText(markdown) {
   return text;
 }
 
-// Add this math calculation function after the markdownToSpeechText function
+// Math calculation utility
 const calculateMath = (expression) => {
   try {
-    // Clean the expression - remove extra spaces and common words
     let cleanExpr = expression
       .toLowerCase()
       .replace(/what is|calculate|compute|solve|evaluate/gi, '')
@@ -164,122 +78,11 @@ const calculateMath = (expression) => {
       .replace(/equals|equal to/g, '=')
       .replace(/\s+/g, '')
       .trim();
-
-    // Handle multiple operations with same precedence
-    // First, handle addition and subtraction
-    if (cleanExpr.includes('+') || cleanExpr.includes('-')) {
-      // Split by + and - but keep the operators
-      const parts = cleanExpr.split(/([+-])/);
-      if (parts.length >= 3) {
-        let result = parseFloat(parts[0]);
-        let expression = parts[0];
-        
-        for (let i = 1; i < parts.length; i += 2) {
-          if (i + 1 < parts.length) {
-            const operator = parts[i];
-            const operand = parseFloat(parts[i + 1]);
-            
-            if (operator === '+') {
-              result += operand;
-            } else if (operator === '-') {
-              result -= operand;
-            }
-            
-            expression += ` ${operator} ${parts[i + 1]}`;
-          }
-        }
-        
-        return {
-          expression: expression,
-          result: result,
-          formattedResult: Number.isInteger(result) ? result.toString() : result.toFixed(2)
-        };
-      }
-    }
-
-    // Handle multiplication and division
-    if (cleanExpr.includes('*') || cleanExpr.includes('/')) {
-      const parts = cleanExpr.split(/([*/])/);
-      if (parts.length >= 3) {
-        let result = parseFloat(parts[0]);
-        let expression = parts[0];
-        
-        for (let i = 1; i < parts.length; i += 2) {
-          if (i + 1 < parts.length) {
-            const operator = parts[i];
-            const operand = parseFloat(parts[i + 1]);
-            
-            if (operator === '*') {
-              result *= operand;
-            } else if (operator === '/') {
-              if (operand === 0) {
-                return 'Error: Division by zero is not allowed';
-              }
-              result /= operand;
-            }
-            
-            expression += ` ${operator} ${parts[i + 1]}`;
-          }
-        }
-        
-        return {
-          expression: expression,
-          result: result,
-          formattedResult: Number.isInteger(result) ? result.toString() : result.toFixed(2)
-        };
-      }
-    }
-
-    // Handle mixed operations (basic implementation - evaluates left to right)
-    if ((cleanExpr.includes('+') || cleanExpr.includes('-')) && 
-        (cleanExpr.includes('*') || cleanExpr.includes('/'))) {
-      const parts = cleanExpr.split(/([+\-*/])/);
-      if (parts.length >= 3) {
-        let result = parseFloat(parts[0]);
-        let expression = parts[0];
-        
-        for (let i = 1; i < parts.length; i += 2) {
-          if (i + 1 < parts.length) {
-            const operator = parts[i];
-            const operand = parseFloat(parts[i + 1]);
-            
-            switch (operator) {
-              case '+':
-                result += operand;
-                break;
-              case '-':
-                result -= operand;
-                break;
-              case '*':
-                result *= operand;
-                break;
-              case '/':
-                if (operand === 0) {
-                  return 'Error: Division by zero is not allowed';
-                }
-                result /= operand;
-                break;
-            }
-            
-            expression += ` ${operator} ${parts[i + 1]}`;
-          }
-        }
-        
-        return {
-          expression: expression,
-          result: result,
-          formattedResult: Number.isInteger(result) ? result.toString() : result.toFixed(2)
-        };
-      }
-    }
-
-    // Original single operation handling
+    // Only basic two-operand math
     const mathRegex = /^(\d+(?:\.\d+)?)\s*([+\-*/])\s*(\d+(?:\.\d+)?)$/;
     const match = cleanExpr.match(mathRegex);
-    
-    if (!match) {
-      return null;
-    }
+
+    if (!match) return null;
 
     const [, num1, operator, num2] = match;
     const a = parseFloat(num1);
@@ -287,23 +90,14 @@ const calculateMath = (expression) => {
 
     let result;
     switch (operator) {
-      case '+':
-        result = a + b;
-        break;
-      case '-':
-        result = a - b;
-        break;
-      case '*':
-        result = a * b;
-        break;
+      case '+': result = a + b; break;
+      case '-': result = a - b; break;
+      case '*': result = a * b; break;
       case '/':
-        if (b === 0) {
-          return 'Error: Division by zero is not allowed';
-        }
+        if (b === 0) return 'Error: Division by zero is not allowed';
         result = a / b;
         break;
-      default:
-        return null;
+      default: return null;
     }
 
     return {
@@ -311,7 +105,7 @@ const calculateMath = (expression) => {
       result: result,
       formattedResult: Number.isInteger(result) ? result.toString() : result.toFixed(2)
     };
-  } catch (error) {
+  } catch {
     return null;
   }
 };
@@ -330,10 +124,10 @@ const VoiceAssistant = () => {
   const [showGoogleButton, setShowGoogleButton] = useState(false);
   const hasWishedRef = useRef(false);
 
-  // Category state - changed to checkbox system
+  // Category state
   const [showCategory, setShowCategory] = useState(false);
   const [categories, setCategories] = useState([]);
-  const [selectedCategories, setSelectedCategories] = useState(['all']); // Array of checked categories
+  const [selectedCategories, setSelectedCategories] = useState(['all']);
   const [showCategoryButton, setShowCategoryButton] = useState(false);
 
   // Code commands state
@@ -361,7 +155,9 @@ const VoiceAssistant = () => {
   const dataLoadedRef = useRef(false);
   const lastCommandFromInputRef = useRef(false);
   const Datacount = data.length;
-  const Questions = data.map((items)=>(<>{items.question}, </>))
+  const Questions = data.map((items)=>(<>{items.question}, </>));
+  const [copiedIndex, setCopiedIndex] = useState(null);
+  const prefetchingRef = useRef(false);
 
   // Helper: get a voice, fallback to default if not found
   const getVoice = () => {
@@ -374,6 +170,7 @@ const VoiceAssistant = () => {
       null;
     return voice;
   };
+
   // Speak function with fallback for voices not loaded
   const speak = (text, isMarkdown = false) => {
     if (!window.speechSynthesis) return;
@@ -403,6 +200,7 @@ const VoiceAssistant = () => {
       setAndSpeak();
     }
   };
+
   // Greet on load, but only once
   const wishMe = () => {
     if (hasWishedRef.current) return;
@@ -416,6 +214,7 @@ const VoiceAssistant = () => {
       speak('Good evening. How can I help you?');
     }
   };
+
   // Main command handler
   const takeCommand = async (msg, { fromInput = false } = {}) => {
     setListening(false);
@@ -423,12 +222,12 @@ const VoiceAssistant = () => {
     setChatHistory(prev => [...prev, { type: 'user', text: msg }]);
 
     // Handle clear commands first
-    if (lowerMsg === '/cls' || lowerMsg === '/clear' || lowerMsg === 'cls' || lowerMsg === 'clear') {
+    if (['/cls', '/clear', 'cls', 'clear'].includes(lowerMsg)) {
       setChatHistory([]);
       if (!fromInput) speak('Chat history cleared.');
       setGoogleSearchQuery('');
       setShowGoogleButton(false);
-      setSelectedCategories(['all']); // Reset to all categories
+      setSelectedCategories(['all']);
       setShowCategoryButton(false);
       setShowCodeCategory(false);
       setShowNewCodeForm(false);
@@ -468,7 +267,6 @@ const VoiceAssistant = () => {
         setShowGoogleButton(false);
         return;
       }
-      
       const response = `${mathResult.expression} = ${mathResult.formattedResult}`;
       setChatHistory(prev => [...prev, { type: 'bot', text: response }]);
       if (!fromInput) speak(response);
@@ -482,7 +280,7 @@ const VoiceAssistant = () => {
     try {
       const res = await axios.get('https://server-01-v2cx.onrender.com/getassistant');
       latestData = Array.isArray(res.data) ? res.data : [];
-      setData(latestData); // update state for UI/category list
+      setData(latestData);
     } catch (err) {
       setError('Failed to load assistant data for voice command.');
       if (!fromInput) speak('Sorry, I failed to load my brain.');
@@ -507,7 +305,6 @@ const VoiceAssistant = () => {
     let filteredData = latestData;
     if (!selectedCategories.includes('all')) {
       filteredData = latestData.filter(item => {
-        // Check if item matches any of the selected categories
         return selectedCategories.some(category => {
           if (category === 'markdown') {
             return item.answer && (item.answer.includes('```') || item.answer.includes('#'));
@@ -534,13 +331,10 @@ const VoiceAssistant = () => {
 
     if (matchedItem) {
       const { answer, link, image, file, open } = matchedItem;
-      
-      // If markdown category is selected, convert to plain text for display
       let displayAnswer = answer;
       if (selectedCategories.includes('markdown')) {
         displayAnswer = markdownToSpeechText(answer);
       }
-      
       setChatHistory(prev => [
         ...prev,
         {
@@ -552,8 +346,6 @@ const VoiceAssistant = () => {
           open
         }
       ]);
-      
-      // Speak the answer as markdown, only if not from input
       if (!fromInput) speak(answer, true);
       if (open && link) {
         window.open(link, '_blank');
@@ -608,40 +400,38 @@ const VoiceAssistant = () => {
     }
     return;
   };
-    // Start listening
-    const handleStartListening = async () => {
-      setError('');
-  
-      // Start recognition immediately (no global loading)
-      if (!recognitionRef.current) {
-        setError('Speech recognition is not available.');
-        return;
-      }
-      setListening(true);
-      try {
-        recognitionRef.current.start();
-      } catch (err) {
-        setListening(false);
-        setError('Could not start voice recognition.');
-      }
-  
-      // Prefetch data silently in background
-      if (!dataLoadedRef.current && !prefetchingRef.current) {
-        prefetchingRef.current = true;
-        axios
-          .get('https://server-01-v2cx.onrender.com/getassistant')
-          .then(res => {
-            setData(Array.isArray(res.data) ? res.data : []);
-            dataLoadedRef.current = true;
-          })
-          .catch(() => {
-            // silent background failure
-          })
-          .finally(() => {
-            prefetchingRef.current = false;
-          });
-      }
-    };
+
+  // Start listening
+  const handleStartListening = async () => {
+    setError('');
+    if (!recognitionRef.current) {
+      setError('Speech recognition is not available.');
+      return;
+    }
+    setListening(true);
+    try {
+      recognitionRef.current.start();
+    } catch (err) {
+      setListening(false);
+      setError('Could not start voice recognition.');
+    }
+
+    // Prefetch data silently in background
+    if (!dataLoadedRef.current && !prefetchingRef.current) {
+      prefetchingRef.current = true;
+      axios
+        .get('https://server-01-v2cx.onrender.com/getassistant')
+        .then(res => {
+          setData(Array.isArray(res.data) ? res.data : []);
+          dataLoadedRef.current = true;
+        })
+        .catch(() => {})
+        .finally(() => {
+          prefetchingRef.current = false;
+        });
+    }
+  };
+
   // Handle text input submit
   const handleInputSubmit = (e) => {
     e.preventDefault();
@@ -691,7 +481,6 @@ const VoiceAssistant = () => {
     e.preventDefault();
     if (newCodeForm.question.trim() && newCodeForm.answer.trim()) {
       try {
-        // Prepare the data for API submission
         const submitData = {
           question: newCodeForm.question.trim(),
           answer: newCodeForm.answer.trim(),
@@ -702,7 +491,6 @@ const VoiceAssistant = () => {
           file: ''
         };
 
-        // Send data to API
         const response = await fetch('https://server-01-v2cx.onrender.com/postassistant', {
           method: 'POST',
           headers: {
@@ -712,14 +500,11 @@ const VoiceAssistant = () => {
         });
 
         if (response.ok) {
-          // Add to local data for immediate display
           setData(prev => [...prev, submitData]);
-          setChatHistory(prev => [...prev, { 
-            type: 'bot', 
-            text: `✅ New code item added successfully!\n\n**Question:** ${submitData.question}\n\n**Answer:** ${submitData.answer}\n\n**Category:** ${submitData.category}` 
+          setChatHistory(prev => [...prev, {
+            type: 'bot',
+            text: `✅ New code item added successfully!\n\n**Question:** ${submitData.question}\n\n**Answer:** ${submitData.answer}\n\n**Category:** ${submitData.category}`
           }]);
-          
-          // Reset form
           setNewCodeForm({
             question: '',
             answer: '',
@@ -727,7 +512,6 @@ const VoiceAssistant = () => {
           });
           setShowNewCodeForm(false);
           setShowAnswerPreview(false);
-          
           speak('New code item added successfully to the database.');
         } else {
           throw new Error('API request failed');
@@ -1095,52 +879,25 @@ const VoiceAssistant = () => {
           >
             <div
               className={`max-w-[95%] px-3 py-0.5 rounded-lg break-words text-sm ${
-                chat.type === 'user' ? 'bg-transparent text-zinc-400 min-h-10 flex items-center justify-center' : 'bg-transparent border border-zinc-700/20 py-1 text-zinc-200 text-wrap break-words overflow-hidden'
+                chat.type === 'user'
+                  ? 'bg-transparent text-zinc-400 min-h-10 flex items-center justify-center text-nowrap'
+                  : 'bg-transparent border border-zinc-700/20 text-wrap py-1 text-zinc-200 break-words overflow-hidden'
               }`}
             >
               <div className="relative mb-1">
                 {chat.text && (
-                  <div className='flex items-start justify-start gap-2'>
+                  <div className="flex flex-col items-start justify-start gap-2">
                     <div className="markdown">
                       {chat.type === 'user' ? (
-                        <span className='text-wrap'>{chat.text}</span>
+                        <span className=" ">{chat.text} </span>
                       ) : (
-                        <TypewriterMarkdown 
-                          text={chat.text} 
-                          speed={80} 
+                        <TypewriterMarkdown
+                          text={chat.text}
+                          speed={80}
                           delay={index * 100}
                         />
                       )}
                     </div>
-                    {chat.type === 'user' ? null : (
-                      <button
-                        type="button"
-                        className="w-4 bg-transparent cursor-pointer transition-all duration-300 text-zinc-600 hover:text-zinc-200"
-                        title="Copy to clipboard"
-                        onClick={async () => {
-                          if (typeof chat.text === 'string') {
-                            try {
-                              await navigator.clipboard.writeText(chat.text);
-                            } catch (err) {
-                              console.error('Failed to copy text: ', err);
-                              // Fallback for older browsers
-                              const textArea = document.createElement('textarea');
-                              textArea.value = chat.text;
-                              document.body.appendChild(textArea);
-                              textArea.select();
-                              try {
-                                document.execCommand('copy');
-                              } catch (fallbackErr) {
-                                console.error('Fallback copy failed: ', fallbackErr);
-                              }
-                              document.body.removeChild(textArea);
-                            }
-                          }
-                        }}
-                      >
-                        <i className='ri-file-copy-2-line text-xl'></i>
-                      </button>
-                    )}
                   </div>
                 )}
               </div>
@@ -1174,6 +931,59 @@ const VoiceAssistant = () => {
                 >
                   📎 Download File
                 </a>
+              )}
+
+              {/* Copy to clipboard button for assistant messages */}
+              {chat.type !== 'user' && (
+                <div id='testing' className='flex items-center w-full h-fit bg-zinc-900 gap-2 rounded-md'>
+                  {/* Copy button */}
+                  <span>
+                    <div className="h-fit w-full flex items-center justify-start gap-2 mt-1">
+                      <button
+                        type="button"
+                        className="w-4 bg-transparent cursor-pointer transition-all duration-300 text-zinc-600 hover:text-zinc-200"
+                        title="Copy markdown to clipboard"
+                        onClick={async () => {
+                          if (typeof chat.text === 'string') {
+                            let markdownToCopy = chat.text;
+                            try {
+                              await navigator.clipboard.writeText(markdownToCopy);
+                              setCopiedIndex(index);
+                              setTimeout(() => setCopiedIndex(null), 1200);
+                            } catch (err) {
+                              console.error('Failed to copy text: ', err);
+                              // Fallback for older browsers
+                              const textArea = document.createElement('textarea');
+                              textArea.value = markdownToCopy;
+                              document.body.appendChild(textArea);
+                              textArea.select();
+                              try {
+                                document.execCommand('copy');
+                                setCopiedIndex(index);
+                                setTimeout(() => setCopiedIndex(null), 1200);
+                              } catch (fallbackErr) {
+                                console.error('Fallback copy failed: ', fallbackErr);
+                              }
+                              document.body.removeChild(textArea);
+                            }
+                          }
+                        }}
+                      >
+                        <i
+                          className={`ri-file-copy-2-line text-xl ${
+                            copiedIndex === index ? 'text-green-400' : 'text-zinc-500'
+                          } `}
+                        ></i>
+                      </button>
+                    </div>
+                  </span>
+                  {/* Category show */}
+                  {/* {chat.category && (
+                    <span className="text-xs text-zinc-400 px-2 py-1 rounded">
+                      {chat.category}
+                    </span>
+                  )} */}
+                </div>
               )}
             </div>
           </div>
@@ -1282,23 +1092,22 @@ const VoiceAssistant = () => {
                   <>
                     <button
                       type="button"
-                      className="mt-2 flex items-center gap-1 px-3 py-1 bg-cyan-700 hover:bg-cyan-800 text-white rounded transition text-sm"
+                      className="mt-2 flex items-center gap-1 px-1.5 py-1 bg-zinc-800 hover:bg-zinc-700 cursor-pointer text-white rounded transition text-sm"
                       onClick={() => setShowAnswerPreview(true)}
                     >
                       <i className="ri-eye-line"></i>
-                      Show Markdown Output
                     </button>
                     {showAnswerPreview && (
                       <div
-                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+                        className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur bg-black/60"
                         onClick={() => setShowAnswerPreview(false)}
                       >
                         <div
-                          className="bg-zinc-900 border border-zinc-700 rounded-xl p-6 max-w-lg w-full shadow-2xl relative"
+                          className="bg-zinc-900 border border-zinc-700 rounded-xl p-6 overflow-auto w-full max-w-[700px] shadow-2xl relative"
                           onClick={e => e.stopPropagation()}
                         >
                           <button
-                            className="absolute top-2 right-2 text-zinc-400 hover:text-zinc-100"
+                            className="absolute top-2 right-2 text-zinc-400 hover:text-zinc-100 cursor-pointer"
                             onClick={() => setShowAnswerPreview(false)}
                             type="button"
                           >
@@ -1306,10 +1115,12 @@ const VoiceAssistant = () => {
                           </button>
                           <div className="mb-2 text-zinc-300 font-semibold text-lg flex items-center gap-2">
                             <i className="ri-eye-line"></i>
-                            Markdown Preview
+                            {!newCodeForm.question ? 'Markdown Preview' : `${newCodeForm.question}`}
                           </div>
                           <div className="prose prose-invert max-w-none text-zinc-100">
+                            <div className='markdown'>
                             <Markdown>{newCodeForm.answer}</Markdown>
+                            </div>
                           </div>
                         </div>
                       </div>
