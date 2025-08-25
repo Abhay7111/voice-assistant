@@ -1298,7 +1298,7 @@ const VoiceAssistant = () => {
               </p>
               {!Datacount == 0 && <p className='px-2 py-1 rounded-md border border-zinc-700/50 w-full max-w-[85%] text-zinc-400 '>If you're willing to guide me, I'd be truly grateful. Learning from you would be an excellent opportunity to grow, improve my skills, and contribute more effectively.</p>}
               {!Datacount == 0 && <p className='px-2 py-1 rounded-md border border-zinc-700/50 w-full max-w-[85%] text-zinc-400 '>I'm eager to learn more. I would sincerely appreciate your guidance and support in <NavLink to={`/train`} className={`text-blue-500/60`}>helping</NavLink> me grow.</p>}
-              {Datacount <= 99 && <p className='px-2 py-2 rounded-md border border-zinc-700/50 w-full max-w-[85%] text-zinc-400 flex flex-wrap gap-2 leading-4 '>I have knowledge on this : <span>{Questions}</span></p>}
+              {Datacount <= 99 && <p className='px-2 py-2 rounded-md border border-zinc-700/50 w-full max-w-[85%] text-zinc-400 flex flex-wrap gap-2 leading-4 '>I have knowledge on <span>  math, {Questions}</span></p>}
             </div>
           </div>
         )}
