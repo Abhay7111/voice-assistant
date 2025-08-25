@@ -65,48 +65,281 @@ function markdownToSpeechText(markdown) {
   return text;
 }
 
-// Math calculation utility
+// Math calculation utility - Clean and working version
 const calculateMath = (expression) => {
   try {
+    console.log('Input expression:', expression); // Debug log
+    
     let cleanExpr = expression
       .toLowerCase()
-      .replace(/what is|calculate|compute|solve|evaluate/gi, '')
+      .replace(/what is|calculate|compute|solve|evaluate|simplify/gi, '')
       .replace(/plus/g, '+')
       .replace(/minus/g, '-')
       .replace(/times|multiplied by/g, '*')
       .replace(/divided by|divide/g, '/')
+      .replace(/÷/g, '/') // Support for ÷ symbol
+      .replace(/×/g, '*') // Support for × symbol
+      .replace(/\*/g, '*') // Ensure * is properly handled
+      .replace(/\-/g, '-') // Ensure - is properly handled
       .replace(/equals|equal to/g, '=')
       .replace(/\s+/g, '')
       .trim();
-    // Only basic two-operand math
-    const mathRegex = /^(\d+(?:\.\d+)?)\s*([+\-*/])\s*(\d+(?:\.\d+)?)$/;
-    const match = cleanExpr.match(mathRegex);
 
-    if (!match) return null;
+    console.log('Cleaned expression:', cleanExpr); // Debug log
 
-    const [, num1, operator, num2] = match;
-    const a = parseFloat(num1);
-    const b = parseFloat(num2);
-
-    let result;
-    switch (operator) {
-      case '+': result = a + b; break;
-      case '-': result = a - b; break;
-      case '*': result = a * b; break;
-      case '/':
-        if (b === 0) return 'Error: Division by zero is not allowed';
-        result = a / b;
-        break;
-      default: return null;
+    // Check if the expression contains at least one number and one operator
+    if (!/\d/.test(cleanExpr) || !/[+\-*/]/.test(cleanExpr)) {
+      console.log('Expression must contain at least one number and one operator'); // Debug log
+      return null; // Return null for non-math inputs
     }
 
-    return {
-      expression: `${a} ${operator} ${b}`,
-      result: result,
-      formattedResult: Number.isInteger(result) ? result.toString() : result.toFixed(2)
+    // Function to evaluate expression with proper order of operations
+    const evaluateExpression = (expr) => {
+      console.log('Evaluating:', expr); // Debug log
+      
+      // Remove all spaces
+      expr = expr.replace(/\s+/g, '');
+      
+      // Handle parentheses and curly braces first (innermost to outermost)
+      while (expr.includes('(') || expr.includes('{')) {
+        // Handle parentheses
+        if (expr.includes('(')) {
+          expr = expr.replace(/\(([^()]+)\)/g, (match, innerExpr) => {
+            console.log('Processing parentheses:', innerExpr); // Debug log
+            return evaluateExpression(innerExpr);
+          });
+        }
+        
+        // Handle curly braces
+        if (expr.includes('{')) {
+          expr = expr.replace(/\{([^{}]+)\}/g, (match, innerExpr) => {
+            console.log('Processing curly braces:', innerExpr); // Debug log
+            return evaluateExpression(innerExpr);
+          });
+        }
+      }
+      
+      // Split into tokens using a more robust approach
+      const tokens = [];
+      let current = '';
+      let inNumber = false;
+      
+      for (let i = 0; i < expr.length; i++) {
+        const char = expr[i];
+        
+        if (/\d/.test(char) || char === '.') {
+          // This is a digit or decimal point
+          current += char;
+          inNumber = true;
+        } else if (/[+\-*/]/.test(char)) {
+          // This is an operator
+          if (inNumber && current) {
+            tokens.push(current);
+            current = '';
+            inNumber = false;
+          }
+          tokens.push(char);
+        }
+      }
+      
+      // Don't forget the last number
+      if (current) {
+        tokens.push(current);
+      }
+      
+      console.log('Parsed tokens:', tokens); // Debug log
+      
+      if (tokens.length < 3) {
+        console.log('Not enough tokens, returning:', parseFloat(expr) || 0); // Debug log
+        return parseFloat(expr) || 0;
+      }
+      
+      // First pass: handle multiplication and division
+      let i = 1;
+      while (i < tokens.length - 1) {
+        if (tokens[i] === '*' || tokens[i] === '/') {
+          const left = parseFloat(tokens[i - 1]);
+          const right = parseFloat(tokens[i + 1]);
+          let result;
+          
+          if (tokens[i] === '*') {
+            result = left * right;
+          } else {
+            if (right === 0) throw new Error('Division by zero is not allowed');
+            result = left / right;
+          }
+          
+          console.log(`${left} ${tokens[i]} ${right} = ${result}`); // Debug log
+          
+          // Replace the three tokens with the result
+          tokens.splice(i - 1, 3, result.toString());
+          i = Math.max(1, i - 1); // Reset index to check for consecutive operations
+        } else {
+          i += 2;
+        }
+      }
+      
+      // Second pass: handle addition and subtraction
+      let result = parseFloat(tokens[0]);
+      for (i = 1; i < tokens.length; i += 2) {
+        if (i + 1 >= tokens.length) break;
+        
+        const operator = tokens[i];
+        const nextNumber = parseFloat(tokens[i + 1]);
+        
+        if (isNaN(nextNumber)) continue;
+        
+        switch (operator) {
+          case '+':
+            result += nextNumber;
+            break;
+          case '-':
+            result -= nextNumber;
+            break;
+          default:
+            continue;
+        }
+        
+        console.log(`Current result: ${result}`); // Debug log
+      }
+      
+      return result;
     };
-  } catch {
-    return null;
+
+    // Evaluate the expression
+    const result = evaluateExpression(cleanExpr);
+    console.log('Final result:', result); // Debug log
+    
+    // Format the original expression for display
+    const displayExpr = cleanExpr.replace(/\s+/g, ' ').trim();
+
+    // Generate simplified steps
+    const simplifiedSteps = generateSimplifiedSteps(cleanExpr, result);
+
+    return {
+      expression: displayExpr,
+      result: result,
+      formattedResult: Number.isInteger(result) ? result.toString() : result.toFixed(2),
+      simplifiedSteps: simplifiedSteps
+    };
+  } catch (error) {
+    if (error.message === 'Division by zero is not allowed') {
+      return {
+        expression: expression,
+        result: null,
+        formattedResult: null,
+        error: 'Error: Division by zero is not allowed'
+      };
+    }
+    console.error('Math calculation error:', error);
+    return {
+      expression: expression,
+      result: null,
+      formattedResult: null,
+      error: 'Sorry, I couldn\'t solve this math problem. It might be too complex or contain invalid syntax. You can use the math form to submit it for review!'
+    };
+  }
+};
+
+// Generate simplified step-by-step math solution
+const generateSimplifiedSteps = (expression, result) => {
+  try {
+    let expr = expression.replace(/\s+/g, '');
+    const steps = [];
+    let stepNumber = 1;
+
+    // Split into tokens
+    const tokens = [];
+    let current = '';
+    let inNumber = false;
+    
+    for (let i = 0; i < expr.length; i++) {
+      const char = expr[i];
+      
+      if (/\d/.test(char) || char === '.') {
+        current += char;
+        inNumber = true;
+      } else if (/[+\-*/]/.test(char)) {
+        if (inNumber && current) {
+          tokens.push(current);
+          current = '';
+          inNumber = false;
+        }
+        tokens.push(char);
+      }
+    }
+    
+    if (current) {
+      tokens.push(current);
+    }
+
+    console.log('Tokens for steps:', tokens); // Debug log
+
+    // First pass: handle multiplication and division
+    let i = 1;
+    while (i < tokens.length - 1) {
+      if (tokens[i] === '*' || tokens[i] === '/') {
+        const left = parseFloat(tokens[i - 1]);
+        const right = parseFloat(tokens[i + 1]);
+        let stepResult;
+        
+        if (tokens[i] === '*') {
+          stepResult = left * right;
+          steps.push(`**Step ${stepNumber}:** Multiply: ${left} × ${right} = ${stepResult}`);
+        } else {
+          stepResult = left / right;
+          steps.push(`**Step ${stepNumber}:** Divide: ${left} ÷ ${right} = ${stepResult}`);
+        }
+        
+        stepNumber++;
+        tokens.splice(i - 1, 3, stepResult.toString());
+        i = Math.max(1, i - 1);
+      } else {
+        i += 2;
+      }
+    }
+    
+    // Second pass: handle addition and subtraction
+    let runningResult = parseFloat(tokens[0]);
+    for (i = 1; i < tokens.length; i += 2) {
+      if (i + 1 >= tokens.length) break;
+      
+      const operator = tokens[i];
+      const nextNumber = parseFloat(tokens[i + 1]);
+      
+      if (isNaN(nextNumber)) continue;
+      
+      let stepResult;
+      if (operator === '+') {
+        stepResult = runningResult + nextNumber;
+        steps.push(`**Step ${stepNumber}:** Add: ${runningResult} + ${nextNumber} = ${stepResult}`);
+      } else if (operator === '-') {
+        stepResult = runningResult - nextNumber;
+        steps.push(`**Step ${stepNumber}:** Subtract: ${runningResult} - ${nextNumber} = ${stepResult}`);
+      }
+      
+      stepNumber++;
+      runningResult = stepResult;
+    }
+
+    // Add final result with explanation
+    const finalExplanation = getFinalExplanation(result);
+    steps.push(`**Final Answer:** ${result}\n\n${finalExplanation}`);
+
+    return steps.join('\n\n');
+  } catch (error) {
+    console.error('Error generating simplified steps:', error);
+    return `**Result:** ${result}`;
+  }
+};
+
+// Helper function to provide friendly final answer explanation
+const getFinalExplanation = (result) => {
+  if (Number.isInteger(result)) {
+    return `✨ The answer is a whole number: **${result}**`;
+  } else {
+    const rounded = Math.round(result * 100) / 100;
+    return `✨ The answer is approximately: **${rounded}** (rounded to 2 decimal places)`;
   }
 };
 
@@ -138,6 +371,14 @@ const VoiceAssistant = () => {
     question: '',
     answer: '',
     category: 'code'
+  });
+
+  // Math form state
+  const [showMathForm, setShowMathForm] = useState(false);
+  const [newMathForm, setNewMathForm] = useState({
+    question: '',
+    answer: '',
+    category: 'math'
   });
 
   // Loading state management
@@ -251,28 +492,77 @@ const VoiceAssistant = () => {
       setShowCodeCategory(false);
       setShowCategory(false);
       setShowCategoryButton(false);
+      setShowMathForm(false);
       if (!fromInput) speak('Opening new code form.');
       setChatHistory(prev => [...prev, { type: 'bot', text: 'Opening new code form. Please fill in the question, answer, and category fields.' }]);
       return;
     }
 
-    // Handle math calculations
+    // Handle /math command - show math category
+    if (lowerMsg === '/math') {
+      setShowMathForm(false);
+      setShowCodeCategory(false);
+      setShowNewCodeForm(false);
+      setShowCategory(false);
+      setShowCategoryButton(false);
+      if (!fromInput) speak('Showing math category.');
+      setChatHistory(prev => [...prev, { type: 'bot', text: 'Showing math category. Here are all the math-related questions and answers:' }]);
+      return;
+    }
+
+    // Handle /newmath command - show new math form
+    if (lowerMsg === '/newmath') {
+      setShowMathForm(true);
+      setShowCodeCategory(false);
+      setShowNewCodeForm(false);
+      setShowCategory(false);
+      setShowCategoryButton(false);
+      if (!fromInput) speak('Opening new math form.');
+      setChatHistory(prev => [...prev, { type: 'bot', text: 'Opening new math form. Please fill in the math problem, solution, and category fields.' }]);
+      return;
+    }
+
+    // Handle math calculations - check API data first, then calculate if needed
     const mathResult = calculateMath(msg);
     if (mathResult) {
-      if (mathResult === 'Error: Division by zero is not allowed') {
-        const errorMsg = 'Error: Division by zero is not allowed';
-        setChatHistory(prev => [...prev, { type: 'bot', text: errorMsg }]);
+      if (mathResult.error) {
+        // Math calculation failed - show error message with math form option
+        const errorMsg = mathResult.error;
+        setChatHistory(prev => [...prev, { 
+          type: 'bot', 
+          text: errorMsg,
+          showMathForm: true // Flag to show math form button
+        }]);
         if (!fromInput) speak(errorMsg);
         setGoogleSearchQuery('');
         setShowGoogleButton(false);
         return;
       }
-      const response = `${mathResult.expression} = ${mathResult.formattedResult}`;
-      setChatHistory(prev => [...prev, { type: 'bot', text: response }]);
-      if (!fromInput) speak(response);
-      setGoogleSearchQuery('');
-      setShowGoogleButton(false);
-      return;
+      
+      if (mathResult.result !== null) {
+        // Math calculation successful - show simplified steps
+        setChatHistory(prev => [...prev, { type: 'bot', text: `**Your Question:** ${mathResult.expression}\n\n${mathResult.simplifiedSteps}` }]);
+        if (!fromInput) speak(`The answer is ${mathResult.formattedResult}`);
+        setGoogleSearchQuery('');
+        setShowGoogleButton(false);
+        return;
+      }
+    } else {
+      // Check if the input looks like a math expression but failed to parse
+      const mathPattern = /[\d+\-*/().\s{}×÷]/.test(msg);
+      if (mathPattern && /\d/.test(msg) && /[+\-*/×÷]/.test(msg)) {
+        // This looks like a math expression but couldn't be solved
+        const errorMsg = 'Sorry, I couldn\'t solve this math problem. It might be too complex or contain invalid syntax. You can use the math form to submit it for review!';
+        setChatHistory(prev => [...prev, { 
+          type: 'bot', 
+          text: errorMsg,
+          showMathForm: true // Flag to show math form button
+        }]);
+        if (!fromInput) speak(errorMsg);
+        setGoogleSearchQuery('');
+        setShowGoogleButton(false);
+        return;
+      }
     }
 
     // Always fetch data from API before processing the command
@@ -315,6 +605,47 @@ const VoiceAssistant = () => {
           }
         });
       });
+    }
+
+    // Check for math questions in API data first (before exact match)
+    let mathMatchedItem = null;
+    for (const item of filteredData) {
+      if (item.question && item.category === 'math') {
+        const q = item.question.trim().toLowerCase();
+        const userMsg = msg.trim().toLowerCase();
+        
+        // Check if the math question matches (allowing for some flexibility)
+        if (q === userMsg || 
+            q.includes(userMsg) || 
+            userMsg.includes(q) ||
+            q.replace(/[^0-9+\-*/()]/g, '') === userMsg.replace(/[^0-9+\-*/()]/g, '')) {
+          mathMatchedItem = item;
+          break;
+        }
+      }
+    }
+
+    // If math question found in API, use that instead of calculation
+    if (mathMatchedItem) {
+      const { answer, link, image, file, open } = mathMatchedItem;
+      setChatHistory(prev => [
+        ...prev,
+        {
+          type: 'bot',
+          text: `**Math Problem from Database:** ${mathMatchedItem.question}\n\n${answer}`,
+          link,
+          image,
+          file,
+          open
+        }
+      ]);
+      if (!fromInput) speak(`I found this math problem in my database: ${answer}`);
+      if (open && link) {
+        window.open(link, '_blank');
+      }
+      setGoogleSearchQuery('');
+      setShowGoogleButton(false);
+      return;
     }
 
     // Only return the data item whose question exactly matches the input (case-insensitive, trimmed)
@@ -453,6 +784,25 @@ const VoiceAssistant = () => {
         setShowCodeCategory(false);
         setShowCategory(false);
         setShowCategoryButton(false);
+        setShowMathForm(false);
+        setMessage('');
+        return;
+      }
+      if (message.trim() === '/math') {
+        setShowMathForm(false);
+        setShowCodeCategory(false);
+        setShowNewCodeForm(false);
+        setShowCategory(false);
+        setShowCategoryButton(false);
+        setMessage('');
+        return;
+      }
+      if (message.trim() === '/newmath') {
+        setShowMathForm(true);
+        setShowCodeCategory(false);
+        setShowNewCodeForm(false);
+        setShowCategory(false);
+        setShowCategoryButton(false);
         setMessage('');
         return;
       }
@@ -462,6 +812,7 @@ const VoiceAssistant = () => {
       setShowCategory(false);
       setShowCodeCategory(false);
       setShowNewCodeForm(false);
+      setShowMathForm(false);
       setSuggestions([]);
       setShowSuggestions(false);
       setActiveSuggestion(-1);
@@ -533,6 +884,70 @@ const VoiceAssistant = () => {
     }
   };
 
+  // Handle new math form input changes
+  const handleNewMathFormChange = (field, value) => {
+    setNewMathForm(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  // Handle new math form submission
+  const handleNewMathFormSubmit = async (e) => {
+    e.preventDefault();
+    if (newMathForm.question.trim() && newMathForm.answer.trim()) {
+      try {
+        const submitData = {
+          question: newMathForm.question.trim(),
+          answer: newMathForm.answer.trim(),
+          category: newMathForm.category || 'math',
+          open: false,
+          link: '',
+          image: '',
+          file: ''
+        };
+
+        const response = await fetch('https://server-01-v2cx.onrender.com/postassistant', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(submitData)
+        });
+
+        if (response.ok) {
+          setData(prev => [...prev, submitData]);
+          setChatHistory(prev => [...prev, {
+            type: 'bot',
+            text: `✅ New math problem added successfully!\n\n**Problem:** ${submitData.question}\n\n**Solution:** ${submitData.answer}\n\n**Category:** ${submitData.category}`
+          }]);
+          setNewMathForm({
+            question: '',
+            answer: '',
+            category: 'math'
+          });
+          setShowMathForm(false);
+          speak('New math problem added successfully to the database.');
+        } else {
+          throw new Error('API request failed');
+        }
+      } catch (error) {
+        console.error('Error adding new math problem:', error);
+        setChatHistory(prev => [...prev, { 
+          type: 'bot', 
+          text: '❌ Error adding new math problem. Please try again or check your connection.' 
+        }]);
+        speak('Error adding new math problem. Please try again.');
+      }
+    } else {
+      setChatHistory(prev => [...prev, { 
+        type: 'bot', 
+        text: '⚠️ Please fill in both problem and solution fields.' 
+      }]);
+      speak('Please fill in both problem and solution fields.');
+    }
+  };
+
   // Cancel new code form
   const handleCancelNewCodeForm = () => {
     setShowNewCodeForm(false);
@@ -547,6 +962,21 @@ const VoiceAssistant = () => {
       text: 'New code form cancelled.' 
     }]);
     speak('New code form cancelled.');
+  };
+
+  // Cancel new math form
+  const handleCancelNewMathForm = () => {
+    setShowMathForm(false);
+    setNewMathForm({
+      question: '',
+      answer: '',
+      category: 'math'
+    });
+    setChatHistory(prev => [...prev, { 
+      type: 'bot', 
+      text: 'New math form cancelled.' 
+    }]);
+    speak('New math form cancelled.');
   };
   // Open Google search in a new tab
   const handleOpenGoogle = () => {
@@ -835,7 +1265,7 @@ const VoiceAssistant = () => {
       chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [chatHistory, googleSearchQuery, showCategory, showCodeCategory, showNewCodeForm]);
-  if (loading) return <div className="text-white p-4 w-full h-full bg-zinc-950 flex items-center justify-center"><div className='size-10 flex items-center justify-center animate-spin bg-transparent'><i className='text-xl font-medium ri-loader-4-line'></i></div></div>;
+  if (loading) return <div className="text-white p-4 w-full h-full bg-zinc-950 flex items-center justify-center"><div className='size-10 flex items-center justify-center animate-spin bg-transparent'><i className='text-xl font-medium ri-loader-4-line'></i></div>We are Loading data...</div>;
   return (
     <div className="h-full w-full bg-zinc-800 flex flex-col justify-end p-2">
       {/* Nav */}
@@ -863,12 +1293,12 @@ const VoiceAssistant = () => {
               )}
               <p className='px-2 py-1 rounded-md border border-zinc-700/50 w-full max-w-[85%] text-zinc-400 '>
               {8 <= 8 
-                ? "Sir, I don’t have enough knowledge right now to assist you properly. I'm still learning and gathering information. Please be patient with me as I improve." 
+                ? "Sir, I don't have enough knowledge right now to assist you properly. I'm still learning and gathering information. Please be patient with me as I improve." 
                 : "Sir, I have a lot of data available. I'm ready to assist you with accurate and helpful information to the best of my ability."}
               </p>
-              {!Datacount == 0 && <p className='px-2 py-1 rounded-md border border-zinc-700/50 w-full max-w-[85%] text-zinc-400 '>If you're willing to guide me, I’d be truly grateful. Learning from you would be an excellent opportunity to grow, improve my skills, and contribute more effectively.</p>}
-              {!Datacount == 0 && <p className='px-2 py-1 rounded-md border border-zinc-700/50 w-full max-w-[85%] text-zinc-400 '>I’m eager to learn more. I would sincerely appreciate your guidance and support in <NavLink to={`/train`} className={`text-blue-500/60`}>helping</NavLink> me grow.</p>}
-              {Datacount <= 99 && <p className='px-2 py-2 rounded-md border border-zinc-700/50 w-full max-w-[85%] text-zinc-400 flex flex-wrap gap-2 leading-4 '>I have knowledge on this : <span>{Questions.length + 1}{Questions}</span></p>}
+              {!Datacount == 0 && <p className='px-2 py-1 rounded-md border border-zinc-700/50 w-full max-w-[85%] text-zinc-400 '>If you're willing to guide me, I'd be truly grateful. Learning from you would be an excellent opportunity to grow, improve my skills, and contribute more effectively.</p>}
+              {!Datacount == 0 && <p className='px-2 py-1 rounded-md border border-zinc-700/50 w-full max-w-[85%] text-zinc-400 '>I'm eager to learn more. I would sincerely appreciate your guidance and support in <NavLink to={`/train`} className={`text-blue-500/60`}>helping</NavLink> me grow.</p>}
+              {Datacount <= 99 && <p className='px-2 py-2 rounded-md border border-zinc-700/50 w-full max-w-[85%] text-zinc-400 flex flex-wrap gap-2 leading-4 '>I have knowledge on this : <span>{Questions}</span></p>}
             </div>
           </div>
         )}
@@ -977,6 +1407,20 @@ const VoiceAssistant = () => {
                       </button>
                     </div>
                   </span>
+                  
+                  {/* Math Form Button - Show when math calculation fails */}
+                  {chat.showMathForm && (
+                    <button
+                      type="button"
+                      onClick={() => setShowMathForm(true)}
+                      className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg transition-colors duration-200 flex items-center gap-1"
+                      title="Submit this math problem for review"
+                    >
+                      <i className="ri-calculator-line"></i>
+                      Submit Math Problem
+                    </button>
+                  )}
+                  
                   {/* Category show */}
                   {/* {chat.category && (
                     <span className="text-xs text-zinc-400 px-2 py-1 rounded">
@@ -1161,6 +1605,76 @@ const VoiceAssistant = () => {
           </div>
         </div>
       )}
+
+      {/* New Math Form */}
+      {showMathForm && (
+        <div className="mb-2 w-full max-w-2xl rounded-xl border border-zinc-700 bg-zinc-900 shadow-lg z-50">
+          <div className="p-4">
+            <div className="text-zinc-300/70 font-medium text-base mb-4 flex items-center gap-2">
+              <i className="ri-calculator-line text-lg"></i>
+              Add New Math Problem
+            </div>
+            <form onSubmit={handleNewMathFormSubmit} className="space-y-4">
+              <div>
+                <label className="block text-zinc-300 text-sm font-medium mb-2">
+                  Math Problem:
+                </label>
+                <input
+                  type="text"
+                  value={newMathForm.question}
+                  onChange={(e) => handleNewMathFormChange('question', e.target.value)}
+                  placeholder="Enter the math problem (e.g., 5 × (2 × 34) ÷ 6 + 7 – 8)..."
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-transparent text-zinc-200 placeholder-zinc-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-zinc-300 text-sm font-medium mb-2">
+                  Solution:
+                </label>
+                <textarea
+                  value={newMathForm.answer}
+                  onChange={(e) => handleNewMathFormChange('answer', e.target.value)}
+                  placeholder="Enter the step-by-step solution..."
+                  rows={6}
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-transparent text-zinc-200 placeholder-zinc-500 resize-vertical"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-zinc-300 text-sm font-medium mb-2">
+                  Category:
+                </label>
+                <input
+                  type="text"
+                  value={newMathForm.category}
+                  onChange={(e) => handleNewMathFormChange('category', e.target.value)}
+                  placeholder="math"
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-transparent text-zinc-200 placeholder-zinc-500"
+                />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors duration-200 flex items-center gap-2"
+                >
+                  <i className="ri-save-line"></i>
+                  Add Math Problem
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCancelNewMathForm}
+                  className="px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-zinc-200 rounded-lg transition-colors duration-200 flex items-center gap-2"
+                >
+                  <i className="ri-close-line"></i>
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Google Search Results */}
       {googleSearchQuery && (
         <div className="mb-5 w-full max-w-full rounded-2xl overflow-hidden border border-zinc-700 bg-zinc-800 h-[95vh]" >
@@ -1180,7 +1694,7 @@ const VoiceAssistant = () => {
             value={message}
             onChange={handleInputChange}
             onKeyDown={handleInputKeyDown}
-            placeholder={`Ask me ${selectedCategories.length === 1 ? 'anything' : 'on this'} ${!selectedCategories.includes('all') ? ` (${selectedCategories.join(', ')})` : ''} ${selectedCategories.length === 1 ? '' : 'topics'}... (or type /code, /newcode)`}
+            placeholder={`Ask me ${selectedCategories.length === 1 ? 'anything' : 'on this'} ${!selectedCategories.includes('all') ? ` (${selectedCategories.join(', ')})` : ''} ${selectedCategories.length === 1 ? '' : 'topics'}... (or type /code, /newcode, /math, /newmath)`}
             className="w-full px-6 h-12 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 rounded-lg focus:outline-none focus:ring-4 focus:ring-zinc-500/20 dark:focus:ring-zinc-400/20 focus:border-transparent transition-all duration-300 text-zinc-700 dark:text-zinc-200 placeholder-zinc-400 dark:placeholder-zinc-500 text-sm shadow-md focus:shadow-zinc-400"
             autoComplete="off"
           />
