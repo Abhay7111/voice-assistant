@@ -1,5 +1,5 @@
 import React from 'react'
-import VoiceAssistant from '../Components/Voiceassistant'
+import VoiceAssistant from '../Components/Voiceassistant';
 
 function Home() {
   return (
