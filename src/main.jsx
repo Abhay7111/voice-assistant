@@ -6,8 +6,10 @@ import Home from './Pages/Home';
 import Assistant from './Components/Forms/Voiceassistant';
 
 const router = createBrowserRouter([
-  { path: '/', element: <Home /> },
-  { path: '/train', element: <Assistant /> },
+  { path: '/', children: [
+    { path: '', element: <Home /> },
+    { path: '/train', element: <Assistant /> },
+  ] },
 ]);
 
 ReactDOM.createRoot(document.getElementById('root')).render(

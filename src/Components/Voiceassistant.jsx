@@ -7,6 +7,20 @@ import { NavLink } from 'react-router-dom';
 const TypewriterMarkdown = ({ text, speed = 80, delay = 0 }) => {
   const [displayText, setDisplayText] = useState('');
   const [currentIndex, setCurrentIndex] = useState(0);
+  const API = 'http://localhost:2000/assistant';
+
+  console.log(API);
+  // Show all data in console for debugging
+  useEffect(() => {
+    axios.get(API)
+      .then(res => {
+        console.log('Assistant Data:', res.data);
+      })
+      .catch(err => {
+        console.error('Error fetching assistant data:', err);
+      });
+  }, []);
+  
 
   useEffect(() => {
     if (!text) return;
@@ -568,7 +582,7 @@ const VoiceAssistant = () => {
     // Always fetch data from API before processing the command
     let latestData = [];
     try {
-      const res = await axios.get('https://server-01-v2cx.onrender.com/getassistant');
+      const res = await axios.get(API);
       latestData = Array.isArray(res.data) ? res.data : [];
       setData(latestData);
     } catch (err) {
@@ -751,7 +765,7 @@ const VoiceAssistant = () => {
     if (!dataLoadedRef.current && !prefetchingRef.current) {
       prefetchingRef.current = true;
       axios
-        .get('https://server-01-v2cx.onrender.com/getassistant')
+        .get(API)
         .then(res => {
           setData(Array.isArray(res.data) ? res.data : []);
           dataLoadedRef.current = true;
@@ -842,7 +856,7 @@ const VoiceAssistant = () => {
           file: ''
         };
 
-        const response = await fetch('https://server-01-v2cx.onrender.com/postassistant', {
+        const response = await fetch('http://localhost:2000/assistant/new/post', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -907,7 +921,7 @@ const VoiceAssistant = () => {
           file: ''
         };
 
-        const response = await fetch('https://server-01-v2cx.onrender.com/postassistant', {
+        const response = await fetch('http://localhost:2000/assistant/new/post', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -1182,7 +1196,7 @@ const VoiceAssistant = () => {
 
     const fetchData = async () => {
       try {
-        const res = await axios.get('https://server-01-v2cx.onrender.com/getassistant');
+        const res = await axios.get(API);
         setData(Array.isArray(res.data) ? res.data : []);
         setDataLoaded(true);
         dataLoadedRef.current = true;
