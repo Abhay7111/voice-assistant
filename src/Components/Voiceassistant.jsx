@@ -354,6 +354,8 @@ const VoiceAssistant = () => {
   const [error, setError] = useState('');
   const [googleSearchQuery, setGoogleSearchQuery] = useState('');
   const [showGoogleButton, setShowGoogleButton] = useState(false);
+  const [userGender, setUserGender] = useState(null); // 'girl' | 'boy' | null
+  const [thinking, setThinking] = useState(false);
   const hasWishedRef = useRef(false);
 
   // Category state
@@ -460,6 +462,22 @@ const VoiceAssistant = () => {
     setListening(false);
     const lowerMsg = msg.trim().toLowerCase();
     setChatHistory(prev => [...prev, { type: 'user', text: msg }]);
+    setThinking(true);
+
+    // Detect gender declaration and store it
+    const isGirl = /\b(i'?m|i am|my gender is|i identify as)\s+(a\s+)?girl\b/i.test(msg);
+    const isBoy = /\b(i'?m|i am|my gender is|i identify as)\s+(a\s+)?boy\b/i.test(msg);
+    if (isGirl || isBoy) {
+      const gender = isGirl ? 'girl' : 'boy';
+      setUserGender(gender);
+      try { localStorage.setItem('userGender', gender); } catch (_) {}
+      const salute = gender === 'girl' ? 'ok mam' : 'ok sir';
+      if (!fromInput) speak(salute);
+      setChatHistory(prev => [...prev, { type: 'bot', text: salute }]);
+      setGoogleSearchQuery('');
+      setShowGoogleButton(false);
+      return;
+    }
 
     // Handle clear commands first
     if (['/cls', '/clear', 'cls', 'clear'].includes(lowerMsg)) {
@@ -467,6 +485,7 @@ const VoiceAssistant = () => {
       if (!fromInput) speak('Chat history cleared.');
       setGoogleSearchQuery('');
       setShowGoogleButton(false);
+      setThinking(false);
       setSelectedCategories(['all']);
       setShowCategoryButton(false);
       setShowCodeCategory(false);
@@ -482,6 +501,7 @@ const VoiceAssistant = () => {
       setShowCategoryButton(false);
       if (!fromInput) speak('Showing code category.');
       setChatHistory(prev => [...prev, { type: 'bot', text: 'Showing code category. Here are all the code-related questions and answers:' }]);
+      setThinking(false);
       return;
     }
 
@@ -494,6 +514,7 @@ const VoiceAssistant = () => {
       setShowMathForm(false);
       if (!fromInput) speak('Opening new code form.');
       setChatHistory(prev => [...prev, { type: 'bot', text: 'Opening new code form. Please fill in the question, answer, and category fields.' }]);
+      setThinking(false);
       return;
     }
 
@@ -506,6 +527,7 @@ const VoiceAssistant = () => {
       setShowCategoryButton(false);
       if (!fromInput) speak('Showing math category.');
       setChatHistory(prev => [...prev, { type: 'bot', text: 'Showing math category. Here are all the math-related questions and answers:' }]);
+      setThinking(false);
       return;
     }
 
@@ -518,6 +540,7 @@ const VoiceAssistant = () => {
       setShowCategoryButton(false);
       if (!fromInput) speak('Opening new math form.');
       setChatHistory(prev => [...prev, { type: 'bot', text: 'Opening new math form. Please fill in the math problem, solution, and category fields.' }]);
+      setThinking(false);
       return;
     }
 
@@ -535,6 +558,7 @@ const VoiceAssistant = () => {
         if (!fromInput) speak(errorMsg);
         setGoogleSearchQuery('');
         setShowGoogleButton(false);
+        setThinking(false);
         return;
       }
       
@@ -544,6 +568,7 @@ const VoiceAssistant = () => {
         if (!fromInput) speak(`The answer is ${mathResult.formattedResult}`);
         setGoogleSearchQuery('');
         setShowGoogleButton(false);
+        setThinking(false);
         return;
       }
     } else {
@@ -560,6 +585,7 @@ const VoiceAssistant = () => {
         if (!fromInput) speak(errorMsg);
         setGoogleSearchQuery('');
         setShowGoogleButton(false);
+        setThinking(false);
         return;
       }
     }
@@ -573,13 +599,13 @@ const VoiceAssistant = () => {
     } catch (err) {
       setError('Failed to load assistant data for voice command.');
       if (!fromInput) speak('Sorry, I failed to load my brain.');
-      // Fallback: Google search
+      // Fallback: Ask for consent to search Google (default off)
       const cleaned = lowerMsg.replace(/shipra|shifra/gi, '').trim();
       const fallbackText = cleaned
-        ? 'This is what I found on Google: ' + cleaned
+        ? `I couldn't find an exact match. Do you want me to search Google for: "${cleaned}"?`
         : "Sorry, I didn't understand. Please try again.";
       if (!fromInput) speak(fallbackText);
-      setChatHistory(prev => [...prev, { type: 'bot', text: fallbackText }]);
+      setChatHistory(prev => [...prev, { type: 'bot', text: fallbackText, googleQuery: cleaned }]);
       if (cleaned) {
         setGoogleSearchQuery(cleaned);
         setShowGoogleButton(true);
@@ -587,6 +613,7 @@ const VoiceAssistant = () => {
         setGoogleSearchQuery('');
         setShowGoogleButton(false);
       }
+      setThinking(false);
       return;
     }
 
@@ -644,6 +671,7 @@ const VoiceAssistant = () => {
       }
       setGoogleSearchQuery('');
       setShowGoogleButton(false);
+      setThinking(false);
       return;
     }
 
@@ -682,6 +710,7 @@ const VoiceAssistant = () => {
       }
       setGoogleSearchQuery('');
       setShowGoogleButton(false);
+      setThinking(false);
       return;
     }
 
@@ -695,6 +724,7 @@ const VoiceAssistant = () => {
       ]);
       setGoogleSearchQuery('');
       setShowGoogleButton(false);
+      setThinking(false);
       return;
     }
     if (lowerMsg.includes('time')) {
@@ -703,6 +733,7 @@ const VoiceAssistant = () => {
       setChatHistory(prev => [...prev, { type: 'bot', text: `The time is ${time}` }]);
       setGoogleSearchQuery('');
       setShowGoogleButton(false);
+      setThinking(false);
       return;
     }
     if (lowerMsg.includes('date')) {
@@ -711,16 +742,17 @@ const VoiceAssistant = () => {
       setChatHistory(prev => [...prev, { type: 'bot', text: `Today's date is ${date}` }]);
       setGoogleSearchQuery('');
       setShowGoogleButton(false);
+      setThinking(false);
       return;
     }
 
-    // No local match → Fallback: Google search only
+    // No local match → Ask for consent to search Google (default off)
     const cleaned = lowerMsg.replace(/shipra|shifra/gi, '').trim();
     const fallbackText = cleaned
-      ? 'This is what I found on Google: ' + cleaned
+      ? `I couldn't find an exact match. Do you want me to search Google for: "${cleaned}"?`
       : "Sorry, I didn't understand. Please try again.";
     if (!fromInput) speak(fallbackText);
-    setChatHistory(prev => [...prev, { type: 'bot', text: fallbackText }]);
+    setChatHistory(prev => [...prev, { type: 'bot', text: fallbackText, googleQuery: cleaned }]);
     if (cleaned) {
       setGoogleSearchQuery(cleaned);
       setShowGoogleButton(true);
@@ -728,6 +760,7 @@ const VoiceAssistant = () => {
       setGoogleSearchQuery('');
       setShowGoogleButton(false);
     }
+    setThinking(false);
     return;
   };
 
@@ -1099,6 +1132,14 @@ const VoiceAssistant = () => {
   };
   // Setup speech recognition
   useEffect(() => {
+    // Load stored gender preference if available
+    try {
+      const storedGender = localStorage.getItem('userGender');
+      if (storedGender === 'girl' || storedGender === 'boy') {
+        setUserGender(storedGender);
+      }
+    } catch (_) {}
+
     if (window.speechSynthesis.getVoices().length === 0) {
       window.speechSynthesis.onvoiceschanged = wishMe;
     } else {
@@ -1263,7 +1304,16 @@ const VoiceAssistant = () => {
     if (chatEndRef.current) {
       chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [chatHistory, googleSearchQuery, showCategory, showCodeCategory, showNewCodeForm]);
+  }, [chatHistory, googleSearchQuery, showCategory, showCodeCategory, showNewCodeForm, thinking]);
+
+  // Scroll to end when assistant finishes responding
+  useEffect(() => {
+    if (!thinking && chatEndRef.current) {
+      setTimeout(() => {
+        chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    }
+  }, [thinking]);
   if (loading) return <div className="text-white p-4 w-full h-full bg-zinc-950 flex items-center justify-center"><div className='size-10 flex items-center justify-center animate-spin bg-transparent'><i className='text-xl font-medium ri-loader-4-line'></i></div>We are Loading data...</div>;
   return (
     <div className="h-full w-full bg-zinc-800 flex flex-col justify-end p-2">
@@ -1296,7 +1346,7 @@ const VoiceAssistant = () => {
                 : "Sir, I have a lot of data available. I'm ready to assist you with accurate and helpful information to the best of my ability."}
               </p>
               {!Datacount == 0 && <p className='px-2 py-1 rounded-md border border-zinc-700/50 w-full max-w-[85%] text-zinc-400 '>If you're willing to guide me, I'd be truly grateful. Learning from you would be an excellent opportunity to grow, improve my skills, and contribute more effectively.</p>}
-              {!Datacount == 0 && <p className='px-2 py-1 rounded-md border border-zinc-700/50 w-full max-w-[85%] text-zinc-400 '>I'm eager to learn more. I would sincerely appreciate your guidance and support in <NavLink to={`/train`} className={`text-blue-500/60`}>helping</NavLink> me grow.</p>}
+              {!Datacount == 0 && <p className='px-2 py-1 rounded-md border border-zinc-700/50 w-full max-w-[85%] text-zinc-400 '>I'm eager to learn more. I would sincerely appreciate your guidance and support in <NavLink to={`/train`} className={`text-blue-500/60`}>helping</NavLink> me to grow.</p>}
               {Datacount <= 99 && <p className='px-2 py-2 rounded-md border border-zinc-700/50 w-full max-w-[85%] text-zinc-400 flex flex-wrap gap-2 leading-4 '>I have knowledge on <span>  math, {Questions}</span></p>}
             </div>
           </div>
@@ -1318,7 +1368,7 @@ const VoiceAssistant = () => {
                   <div className="flex flex-col items-start justify-start gap-2">
                     <div className="markdown">
                       {chat.type === 'user' ? (
-                        <span className=" ">{chat.text} </span>
+                        <div className="text-zinc-400 w-96 text-end text-wrap ">{chat.text} </div>
                       ) : (
                         <TypewriterMarkdown
                           text={chat.text}
@@ -1399,13 +1449,24 @@ const VoiceAssistant = () => {
                         }}
                       >
                         <i
-                          className={`ri-file-copy-2-line text-xl ${
+                          className={`ri-file-copy-2-line hover:text-blue-500 text-xl ${
                             copiedIndex === index ? 'text-green-400' : 'text-zinc-500'
                           } `}
                         ></i>
                       </button>
                     </div>
                   </span>
+                  {/* Open in Google button when data not found */}
+                  {chat.googleQuery && (
+                    <button
+                      type="button"
+                      onClick={() => window.open(`https://www.google.com/search?q=${encodeURIComponent(chat.googleQuery)}`, '_blank')}
+                      className="cursor-pointer text-zinc-500 hover:text-blue-500 text-xs font-semibold rounded-md transition-colors duration-200 flex items-center gap-1"
+                      title="Search this on Google"
+                    >
+                      <i className='ri-google-line text-base'></i>
+                    </button>
+                  )}
                   
                   {/* Math Form Button - Show when math calculation fails */}
                   {chat.showMathForm && (
@@ -1674,17 +1735,39 @@ const VoiceAssistant = () => {
         </div>
       )}
 
-      {/* Google Search Results */}
-      {googleSearchQuery && (
-        <div className="mb-5 w-full max-w-full rounded-2xl overflow-hidden border border-zinc-700 bg-zinc-800 h-[95vh]" >
-          <iframe
-            title="Google Search"
-            src={`https://www.bing.com/search?q=${encodeURIComponent(googleSearchQuery)}`}
-            style={{ width: '100%', height: '100%', border: 'none', backgroundColor: '#27272a' }}
-            sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-          />
+      {/* Google Search Consent */}
+      {showGoogleButton && googleSearchQuery && (
+        <div className="mb-3 w-full rounded-lg border border-zinc-700 bg-zinc-800 p-2 flex items-end justify-between gap-2">
+          <div className="text-red-500 font-medium text-sm">
+            I couldn't find an exact match. Search Google for . . . <br /> "{googleSearchQuery} " ?
+          </div>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => { handleOpenGoogle(); setShowGoogleButton(false); }}
+              className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm cursor-pointer"
+            >
+              <i className='ri-google-fill text-xl'></i>
+            </button>
+            <button
+              type="button"
+              onClick={() => { setGoogleSearchQuery(''); setShowGoogleButton(false); }}
+              className="px-3 py-1 bg-zinc-700 hover:bg-zinc-600 text-zinc-200 rounded-md text-sm cursor-pointer"
+            >
+              <i className='ri-close-line text-xl'></i>
+            </button>
+          </div>
         </div>
       )}
+
+      {/* Thinking Indicator */}
+      {thinking && (
+        <div className="mb-2 w-fit max-w-[95%] px-3 py-1 rounded-lg border border-zinc-700/20 text-zinc-300 bg-transparent flex items-center gap-2">
+          <i className="ri-loader-4-line animate-spin" />
+          <span>Thinking...</span>
+        </div>
+      )}
+
       {/* Input & Buttons */}
       <form onSubmit={handleInputSubmit} className="flex gap-2 w-full relative">
         <div className="flex-1 relative">
@@ -1751,6 +1834,7 @@ const VoiceAssistant = () => {
           )}
         </button>
       </form>
+      
       {/* Categories with Related Content */}
       {showCategoryButton && (
         <div className=" absolute bottom-20 z-30 left-1/2 -translate-x-1/2 w-[90vw] max-w-[650px] mx-auto bg-zinc-800 border border-zinc-700 rounded-lg shadow-lg overflow-hidden">
