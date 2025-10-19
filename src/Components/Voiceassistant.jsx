@@ -1393,14 +1393,6 @@ const VoiceAssistant = () => {
           <i className="ri-list-check text-lg"></i>
           Categories ({selectedCategories.length})
         </button>
-                  {/* Theme Toggle Button */}
-                  <button
-            onClick={toggleTheme}
-            className=' flex items-center justify-center rounded-md cursor-pointer'
-            title={isDarkTheme ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
-          >
-            <i className={`text-lg ${isDarkTheme ? 'ri-sun-line' : 'ri-moon-line'}`}></i>
-          </button>
           
       </div>
       </div>
