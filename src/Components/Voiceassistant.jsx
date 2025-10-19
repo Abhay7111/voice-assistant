@@ -591,6 +591,16 @@ const VoiceAssistant = () => {
       setThinking(false);
       return;
     } 
+    //Handle change theme command - toggle theme
+    if (lowerMsg === 'change theme') {
+      toggleTheme();
+      setChatHistory(prev => [
+        ...prev,
+        { type: 'bot', text: `Theme changed in " ${!isDarkTheme ? 'dark' : 'light'} " mode.` }
+      ]);
+      setThinking(false);
+      return;
+    } 
 
     // Handle math calculations - check API data first, then calculate if needed
     const mathResult = calculateMath(msg);
