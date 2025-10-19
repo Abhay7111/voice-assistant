@@ -51,7 +51,6 @@ function Assistant() {
       setLoadingCategories(false);
     };
     fetchCategories();
-    // eslint-disable-next-line
   }, []);
 
   const handleChange = (e) => {
@@ -397,25 +396,25 @@ function Assistant() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
                   </svg>
-                  Sending...
+                  Learning...
                 </>
               ) : (
                 <>
                   <i className="ri-send-plane-2-fill text-xl" />
-                  Submit
+                  Teach
                 </>
               )}
             </button>
             {status === 'success' && (
               <div className="text-green-400 mt-4 text-center font-semibold animate-fade-in flex items-center justify-center gap-2">
                 <i className="ri-checkbox-circle-fill text-2xl" />
-                <span>Form submitted successfully!</span>
+                <span>Learned successfully!</span>
               </div>
             )}
             {status === 'error' && (
               <div className="text-red-400 mt-4 text-center font-semibold animate-fade-in flex items-center justify-center gap-2">
                 <i className="ri-close-circle-fill text-2xl" />
-                <span>There was an error submitting the form.</span>
+                <span>There was an error. sorry I can't learne...</span>
               </div>
             )}
           </form>

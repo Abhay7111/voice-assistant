@@ -4,11 +4,15 @@ import './index.css';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import Home from './Pages/Home';
 import Assistant from './Components/Forms/Voiceassistant';
+import Testing from './Pages/Testing';
+import VoiceAssistant from './Components/Voiceassistant';
 
 const router = createBrowserRouter([
   { path: '/', children: [
-    { path: '', element: <Home /> },
+    // { path: '', element: <Home /> },
     { path: '/train', element: <Assistant /> },
+    { path: '', element: <VoiceAssistant /> },
+    {path:'/testing', element:<Testing/>}
   ] },
 ]);
 

@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
 
-function Assistant_index() {
+function Testing() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -11,21 +10,12 @@ function Assistant_index() {
       setLoading(true);
       setError(null);
       try {
-        const response = await axios.get('https://server-01-v2cx.onrender.com/getassistant/');
-        // Accept both array and object responses
-        if (Array.isArray(response.data)) {
-          setData(response.data);
-        } else if (response.data && typeof response.data === 'object') {
-          setData([response.data]);
-        } else {
-          setData([]);
-        }
+        const res = await fetch('https://server-01-v2cx.onrender.com/getassistant');
+        if (!res.ok) throw new Error('Failed to fetch');
+        const result = await res.json();
+        setData(Array.isArray(result) ? result : []);
       } catch (err) {
-        setError(
-          err?.response?.data?.message ||
-          err?.message ||
-          "An error occurred"
-        );
+        setError(err.message || 'An error occurred');
         setData([]);
       } finally {
         setLoading(false);
@@ -34,12 +24,12 @@ function Assistant_index() {
     fetchData();
   }, []);
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <div className="text-zinc-100">Loading...</div>;
   if (error) return <div className="text-red-500">Error: {error}</div>;
 
   return (
-    <div className='text-zinc-100'>
-      <h2>Assistant Data</h2>
+    <div className="text-zinc-100">
+      <h2>Assistant Data - Testing</h2>
       <ul>
         {data.length === 0 && <li>No data found.</li>}
         {data.map((item, idx) => (
@@ -52,4 +42,4 @@ function Assistant_index() {
   );
 }
 
-export default Assistant_index;
+export default Testing

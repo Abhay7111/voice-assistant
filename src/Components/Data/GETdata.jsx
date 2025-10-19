@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 
 const GetData = () => {
-  const Api = "http://localhost:2000/assistant/";
+  const Api = "https://server-01-v2cx.onrender.com/getassistant";
   const [Data, setData] = useState([]);
   const [Loading, setLoading] = useState(true);
   const [Error, setError] = useState(null);
@@ -34,6 +34,5 @@ const GetData = () => {
 
   return { Data, Loading, Error };
 };
-console.log('Data')
 
 export { GetData };

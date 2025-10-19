@@ -7,17 +7,13 @@ import { NavLink } from 'react-router-dom';
 const TypewriterMarkdown = ({ text, speed = 80, delay = 0 }) => {
   const [displayText, setDisplayText] = useState('');
   const [currentIndex, setCurrentIndex] = useState(0);
-  const API = 'http://localhost:2000/assistant';
+  const API = 'https://server-01-v2cx.onrender.com/getassistant';
 
-  console.log(API);
-  // Show all data in console for debugging
   useEffect(() => {
     axios.get(API)
       .then(res => {
-        console.log('Assistant Data:', res.data);
       })
       .catch(err => {
-        console.error('Error fetching assistant data:', err);
       });
   }, []);
   
@@ -82,7 +78,6 @@ function markdownToSpeechText(markdown) {
 // Math calculation utility - Clean and working version
 const calculateMath = (expression) => {
   try {
-    console.log('Input expression:', expression); // Debug log
     
     let cleanExpr = expression
       .toLowerCase()
@@ -99,17 +94,14 @@ const calculateMath = (expression) => {
       .replace(/\s+/g, '')
       .trim();
 
-    console.log('Cleaned expression:', cleanExpr); // Debug log
-
+    
     // Check if the expression contains at least one number and one operator
     if (!/\d/.test(cleanExpr) || !/[+\-*/]/.test(cleanExpr)) {
-      console.log('Expression must contain at least one number and one operator'); // Debug log
       return null; // Return null for non-math inputs
     }
 
     // Function to evaluate expression with proper order of operations
     const evaluateExpression = (expr) => {
-      console.log('Evaluating:', expr); // Debug log
       
       // Remove all spaces
       expr = expr.replace(/\s+/g, '');
@@ -119,7 +111,6 @@ const calculateMath = (expression) => {
         // Handle parentheses
         if (expr.includes('(')) {
           expr = expr.replace(/\(([^()]+)\)/g, (match, innerExpr) => {
-            console.log('Processing parentheses:', innerExpr); // Debug log
             return evaluateExpression(innerExpr);
           });
         }
@@ -127,7 +118,6 @@ const calculateMath = (expression) => {
         // Handle curly braces
         if (expr.includes('{')) {
           expr = expr.replace(/\{([^{}]+)\}/g, (match, innerExpr) => {
-            console.log('Processing curly braces:', innerExpr); // Debug log
             return evaluateExpression(innerExpr);
           });
         }
@@ -161,10 +151,8 @@ const calculateMath = (expression) => {
         tokens.push(current);
       }
       
-      console.log('Parsed tokens:', tokens); // Debug log
       
       if (tokens.length < 3) {
-        console.log('Not enough tokens, returning:', parseFloat(expr) || 0); // Debug log
         return parseFloat(expr) || 0;
       }
       
@@ -183,7 +171,6 @@ const calculateMath = (expression) => {
             result = left / right;
           }
           
-          console.log(`${left} ${tokens[i]} ${right} = ${result}`); // Debug log
           
           // Replace the three tokens with the result
           tokens.splice(i - 1, 3, result.toString());
@@ -214,7 +201,7 @@ const calculateMath = (expression) => {
             continue;
         }
         
-        console.log(`Current result: ${result}`); // Debug log
+        
       }
       
       return result;
@@ -222,7 +209,6 @@ const calculateMath = (expression) => {
 
     // Evaluate the expression
     const result = evaluateExpression(cleanExpr);
-    console.log('Final result:', result); // Debug log
     
     // Format the original expression for display
     const displayExpr = cleanExpr.replace(/\s+/g, ' ').trim();
@@ -287,8 +273,7 @@ const generateSimplifiedSteps = (expression, result) => {
       tokens.push(current);
     }
 
-    console.log('Tokens for steps:', tokens); // Debug log
-
+    
     // First pass: handle multiplication and division
     let i = 1;
     while (i < tokens.length - 1) {
@@ -582,7 +567,7 @@ const VoiceAssistant = () => {
     // Always fetch data from API before processing the command
     let latestData = [];
     try {
-      const res = await axios.get(API);
+      const res = await axios.get('https://server-01-v2cx.onrender.com/getassistant');
       latestData = Array.isArray(res.data) ? res.data : [];
       setData(latestData);
     } catch (err) {
@@ -765,7 +750,7 @@ const VoiceAssistant = () => {
     if (!dataLoadedRef.current && !prefetchingRef.current) {
       prefetchingRef.current = true;
       axios
-        .get(API)
+        .get('https://server-01-v2cx.onrender.com/getassistant')
         .then(res => {
           setData(Array.isArray(res.data) ? res.data : []);
           dataLoadedRef.current = true;
@@ -856,7 +841,7 @@ const VoiceAssistant = () => {
           file: ''
         };
 
-        const response = await fetch('http://localhost:2000/assistant/new/post', {
+        const response = await fetch('https://server-01-v2cx.onrender.com/postassistant/', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -921,7 +906,7 @@ const VoiceAssistant = () => {
           file: ''
         };
 
-        const response = await fetch('http://localhost:2000/assistant/new/post', {
+        const response = await fetch('https://server-01-v2cx.onrender.com/postassistant', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -1196,7 +1181,7 @@ const VoiceAssistant = () => {
 
     const fetchData = async () => {
       try {
-        const res = await axios.get(API);
+        const res = await axios.get('https://server-01-v2cx.onrender.com/getassistant');
         setData(Array.isArray(res.data) ? res.data : []);
         setDataLoaded(true);
         dataLoadedRef.current = true;
