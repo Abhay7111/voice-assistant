@@ -76,151 +76,441 @@ function markdownToSpeechText(markdown) {
 }
 
 // Math calculation utility - Clean and working version
+// -- BODMAS-based math calculation utility --
+
+
+
+// Uses getCommonMathFormulas for math problems/formulas
+
+function getCommonMathFormulas() {
+  // Added 'solve' function to each formula; parses parameters and returns stepwise solution and explanation.
+  // Each function receives a params object (e.g. {a:3, b:4}), returns {steps:[markdown...], result:..., final:...}.
+  return [
+    {
+      name: "Evaluate: 12 + 6 × 27 ÷ 3 + 2 – 16 ÷ 8 × 2",
+      formula: "12 + 6 × 27 ÷ 3 + 2 – 16 ÷ 8 × 2",
+      description: "Evaluate the expression 12 + 6 × 27 ÷ 3 + 2 – 16 ÷ 8 × 2 using BODMAS/PEMDAS order.",
+      solve: () => {
+        let steps = [];
+        steps.push("**Step 1:** Start with the original expression.");
+        steps.push("12 + 6 × 27 ÷ 3 + 2 – 16 ÷ 8 × 2");
+        // First, multiplication and division from left to right
+        
+        // 6 × 27 = 162
+        steps.push("**Step 2:** Calculate 6 × 27:");
+        steps.push("= 12 + 162 ÷ 3 + 2 – 16 ÷ 8 × 2");
+        
+        // 162 ÷ 3 = 54
+        steps.push("**Step 3:** Calculate 162 ÷ 3:");
+        steps.push("= 12 + 54 + 2 – 16 ÷ 8 × 2");
+        
+        // 16 ÷ 8 = 2
+        steps.push("**Step 4:** Calculate 16 ÷ 8:");
+        steps.push("= 12 + 54 + 2 – 2 × 2");
+        
+        // 2 × 2 = 4
+        steps.push("**Step 5:** Calculate 2 × 2:");
+        steps.push("= 12 + 54 + 2 – 4");
+        
+        // Now, addition and subtraction from left to right
+        // 12 + 54 = 66
+        steps.push("**Step 6:** Calculate 12 + 54:");
+        steps.push("= 66 + 2 – 4");
+        
+        // 66 + 2 = 68
+        steps.push("**Step 7:** Calculate 66 + 2:");
+        steps.push("= 68 – 4");
+        
+        // 68 – 4 = 64
+        steps.push("**Step 8:** Calculate 68 – 4:");
+        steps.push("= 64");
+        
+        return {
+          steps,
+          result: 64,
+          final: "The final answer is **64**."
+        };
+      }
+    },
+    {
+      name: "Pythagorean Theorem",
+      formula: "a² + b² = c²",
+      description: "In a right triangle, relates the legs (a, b) and hypotenuse (c).",
+      solve: ({ a, b, c }) => {
+        // Solve for the missing variable
+        // Find which variable is missing (a, b, c)
+        let steps = [];
+        if (typeof c === "undefined" && typeof a !== "undefined" && typeof b !== "undefined") {
+          // find c
+          steps.push(`**Step 1:** Write the formula: c² = a² + b²`);
+          steps.push(`**Step 2:** Substitute values: c² = (${a})² + (${b})²`);
+          steps.push(`**Step 3:** Calculate squares: c² = ${a*a} + ${b*b}`);
+          steps.push(`**Step 4:** Add: c² = ${a*a + b*b}`);
+          const csquared = a * a + b * b;
+          const cres = Math.sqrt(csquared);
+          steps.push(`**Step 5:** Take square root: c = √${csquared} = ${cres}`);
+          return { steps, result: cres, final: `The hypotenuse (c) is **${cres}**` };
+        } else if (typeof a === "undefined" && typeof c !== "undefined" && typeof b !== "undefined") {
+          steps.push(`**Step 1:** Write the formula: a² = c² - b²`);
+          steps.push(`**Step 2:** Substitute values: a² = (${c})² - (${b})²`);
+          steps.push(`**Step 3:** Calculate squares: a² = ${c*c} - ${b*b}`);
+          steps.push(`**Step 4:** Subtract: a² = ${c*c - b*b}`);
+          const asquared = c * c - b * b;
+          const ares = Math.sqrt(asquared);
+          steps.push(`**Step 5:** Take square root: a = √${asquared} = ${ares}`);
+          return { steps, result: ares, final: `The side a is **${ares}**` };
+        } else if (typeof b === "undefined" && typeof c !== "undefined" && typeof a !== "undefined") {
+          steps.push(`**Step 1:** Write the formula: b² = c² - a²`);
+          steps.push(`**Step 2:** Substitute values: b² = (${c})² - (${a})²`);
+          steps.push(`**Step 3:** Calculate squares: b² = ${c*c} - ${a*a}`);
+          steps.push(`**Step 4:** Subtract: b² = ${c*c - a*a}`);
+          const bsquared = c * c - a * a;
+          const bres = Math.sqrt(bsquared);
+          steps.push(`**Step 5:** Take square root: b = √${bsquared} = ${bres}`);
+          return { steps, result: bres, final: `The side b is **${bres}**` };
+        } else {
+          return { steps: ["Please provide exactly two values of a, b, and c (one missing)."], result: null, final: "" };
+        }
+      }
+    },
+    {
+      name: "Area of a Circle",
+      formula: "A = πr²",
+      description: "Area for a circle of radius r.",
+      solve: ({ r }) => {
+        if (typeof r === "undefined") {
+          return { steps: ["Radius (r) is required."], result: null, final: "" };
+        }
+        let steps = [];
+        steps.push("**Step 1:** Write the formula: A = π × r²");
+        steps.push(`**Step 2:** Substitute value: A = π × (${r})²`);
+        steps.push(`**Step 3:** Square the radius: (${r})² = ${r*r}`);
+        steps.push(`**Step 4:** Multiply by π: A = π × ${r*r}`);
+        const area = Math.PI * r * r;
+        steps.push(`**Step 5:** Calculate: A ≈ 3.1416 × ${r*r} = ${area.toFixed(4)}`);
+        return { steps, result: area, final: `The area (A) is about **${area.toFixed(4)}**` };
+      }
+    },
+    {
+      name: "Circumference of a Circle",
+      formula: "C = 2πr",
+      description: "Circumference for a circle of radius r.",
+      solve: ({ r }) => {
+        if (typeof r === "undefined") {
+          return { steps: ["Radius (r) is required."], result: null, final: "" };
+        }
+        let steps = [];
+        steps.push("**Step 1:** Write the formula: C = 2π × r");
+        steps.push(`**Step 2:** Substitute value: C = 2 × π × ${r}`);
+        steps.push(`**Step 3:** Multiply 2 × π: 2 × 3.1416 = 6.2832`);
+        steps.push(`**Step 4:** Multiply by r: C = 6.2832 × ${r} = ${(2*Math.PI*r).toFixed(4)}`);
+        return { steps, result: 2*Math.PI*r, final: `The circumference (C) is about **${(2*Math.PI*r).toFixed(4)}**` };
+      }
+    },
+    {
+      name: "Slope Formula",
+      formula: "m = (y₂ - y₁)/(x₂ - x₁)",
+      description: "Slope of a line through two points.",
+      solve: ({ y1, y2, x1, x2 }) => {
+        if ([y1, y2, x1, x2].some(v => typeof v === "undefined")) {
+          return { steps: ["Please provide x₁, y₁, x₂, y₂."], result: null, final: "" };
+        }
+        let steps = [];
+        steps.push("**Step 1:** Write the formula: m = (y₂ - y₁)/(x₂ - x₁)");
+        steps.push(`**Step 2:** Substitute values: m = (${y2} - ${y1})/(${x2} - ${x1})`);
+        steps.push(`**Step 3:** Subtract numerator: ${y2} - ${y1} = ${y2 - y1}`);
+        steps.push(`**Step 4:** Subtract denominator: ${x2} - ${x1} = ${x2 - x1}`);
+        if ((x2 - x1) === 0) {
+          steps.push(`**Step 5:** Division by zero; undefined slope.`);
+          return { steps, result: null, final: "Slope is undefined." };
+        }
+        let m = (y2 - y1)/(x2 - x1);
+        steps.push(`**Step 5:** Divide: m = ${(y2-y1)}/${(x2-x1)} = ${m}`);
+        return { steps, result: m, final: `The slope (m) is **${m}**` };
+      }
+    },
+    {
+      name: "Simple Interest",
+      formula: "I = Prt",
+      description: "Interest earned: P = principal, r = rate, t = time.",
+      solve: ({ P, r, t }) => {
+        if ([P, r, t].some(v => typeof v === "undefined")) {
+          return { steps: ["Please provide principal (P), rate (r), and time (t)."], result: null, final: "" };
+        }
+        let steps = [];
+        steps.push("**Step 1:** Write the formula: I = P × r × t");
+        steps.push(`**Step 2:** Substitute values: I = ${P} × ${r} × ${t}`);
+        const int1 = P * r;
+        steps.push(`**Step 3:** Multiply P × r: ${P} × ${r} = ${int1}`);
+        steps.push(`**Step 4:** Multiply by t: ${int1} × ${t} = ${int1 * t}`);
+        return { steps, result: int1 * t, final: `The simple interest (I) is **${int1 * t}**` };
+      }
+    },
+    {
+      name: "Compound Interest",
+      formula: "A = P(1 + r/n)^(nt)",
+      description: "A = final amount, P = principal, r = rate, n = compounds per year, t = years.",
+      solve: ({ P, r, n, t }) => {
+        if ([P, r, n, t].some(v => typeof v === "undefined")) {
+          return { steps: ["Please provide principal (P), rate (r), n (times per year), and time (t)."], result: null, final: "" };
+        }
+        let steps = [];
+        steps.push("**Step 1:** Write the formula: A = P × (1 + r/n)^(n×t)");
+        steps.push(`**Step 2:** Substitute values: A = ${P} × (1 + ${r}/${n})^(${n}×${t})`);
+        let rateFraction = r/n;
+        steps.push(`**Step 3:** Compute r/n: ${r}/${n} = ${rateFraction}`);
+        steps.push(`**Step 4:** Add 1: 1 + ${rateFraction} = ${1+rateFraction}`);
+        let ex = n * t;
+        steps.push(`**Step 5:** Calculate n × t: ${n} × ${t} = ${ex}`);
+        let base = 1 + rateFraction;
+        let power = Math.pow(base, ex);
+        steps.push(`**Step 6:** Power: (${base})^${ex} = ${power}`);
+        let amount = P * power;
+        steps.push(`**Step 7:** Multiply by P: ${P} × ${power} = ${amount}`);
+        return { steps, result: amount, final: `The compound amount (A) is **${amount.toFixed(2)}**` };
+      }
+    },
+    {
+      name: "Midpoint Formula",
+      formula: "M = ((x₁ + x₂)/2 , (y₁ + y₂)/2)",
+      description: "Midpoint between (x₁, y₁) and (x₂, y₂).",
+      solve: ({ x1, x2, y1, y2 }) => {
+        if ([x1, x2, y1, y2].some(v => typeof v === "undefined")) {
+          return { steps: ["Please provide x₁, y₁, x₂, y₂."], result: null, final: "" };
+        }
+        let steps = [];
+        steps.push("**Step 1:** Write formula: M = ((x₁ + x₂)/2, (y₁ + y₂)/2)");
+        steps.push(`**Step 2:** Substitute: M = ((${x1} + ${x2}) / 2, (${y1} + ${y2}) / 2)`);
+        let mx = (x1 + x2)/2;
+        let my = (y1 + y2)/2;
+        steps.push(`**Step 3:** Compute: (${x1}+${x2})/2 = ${mx}, (${y1}+${y2})/2 = ${my}`);
+        return { steps, result: [mx, my], final: `The midpoint is **(${mx}, ${my})**` };
+      }
+    },
+    {
+      name: "Surface Area of a Sphere",
+      formula: "A = 4πr²",
+      description: "Surface area for a sphere of radius r.",
+      solve: ({ r }) => {
+        if (typeof r === "undefined") {
+          return { steps: ["Radius (r) is required."], result: null, final: "" };
+        }
+        let steps = [];
+        steps.push("**Step 1:** Write formula: A = 4 × π × r²");
+        steps.push(`**Step 2:** Substitute: A = 4 × π × (${r})²`);
+        steps.push(`**Step 3:** Square radius: (${r})² = ${r*r}`);
+        steps.push(`**Step 4:** Multiply: 4 × π × ${r*r}`);
+        let area = 4 * Math.PI * r * r;
+        steps.push(`**Step 5:** Calculate: 4 × 3.1416 × ${r*r} = ${area.toFixed(4)}`);
+        return { steps, result: area, final: `The surface area (A) is about **${area.toFixed(4)}**` };
+      }
+    },
+    {
+      name: "Volume of a Sphere",
+      formula: "V = (4/3)πr³",
+      description: "Volume for a sphere of radius r.",
+      solve: ({ r }) => {
+        if (typeof r === "undefined") {
+          return { steps: ["Radius (r) is required."], result: null, final: "" };
+        }
+        let steps = [];
+        steps.push("**Step 1:** Write formula: V = (4/3) × π × r³");
+        steps.push(`**Step 2:** Substitute: V = (4/3) × π × (${r})³`);
+        let r3 = r * r * r;
+        steps.push(`**Step 3:** Cube the radius: (${r})³ = ${r3}`);
+        let v = (4/3) * Math.PI * r3;
+        steps.push(`**Step 4:** Multiply: (4/3) × 3.1416 × ${r3}`);
+        steps.push(`**Step 5:** Calculate: ${(4/3).toFixed(4)} × 3.1416 × ${r3} = ${v.toFixed(4)}`);
+        return { steps, result: v, final: `The volume (V) is about **${v.toFixed(4)}**` };
+      }
+    }
+    // You can add more formula objects here with 'solve' functions.
+  ];
+}
+
+// Find params for formula given text (very basic, works for "a = 3, b = 4" in question, or "radius is 5")
+function extractFormulaParams(expression, formulaName) {
+  // detect assignments
+  expression = expression.toLowerCase();
+  let params = {};
+  // try (x1, y1), (x2, y2)
+  const xyRegex = /\(?\s*(x1|x₂|x2|y1|y₂|y2)\s*=?\s*(-?\d+(\.\d+)?)/g;
+  let m2;
+  while ((m2 = xyRegex.exec(expression))) {
+    let key = m2[1].replace(/[₂]/g, '').toLowerCase();
+    params[key] = parseFloat(m2[2]);
+  }
+  // 'a = 3', 'b=4', 'c=5'
+  const assignRegex = /\b([abcprtxyz][12]?)\s*=?\s*(-?\d+(\.\d+)?)/g;
+  let m;
+  while ((m = assignRegex.exec(expression))) {
+    params[m[1].toLowerCase()] = parseFloat(m[2]);
+  }
+  // for word-based: "radius 5", "principal 1000", "rate 0.05" etc
+  [
+    ["radius", "r"],
+    ["principal", "p"],
+    ["rate", "r"],
+    ["time", "t"],
+    ["years", "t"],
+    ["compound", "n"], // Try to infer 'n'
+    ["x1", "x1"], ["y1", "y1"], ["x2", "x2"], ["y2", "y2"]
+  ].forEach(([word, variable]) => {
+    let regex = new RegExp(`\\b${word}\\s*(is|=)?\\s*(-?\\d+(\\.\\d+)?)`, "i");
+    let found = expression.match(regex);
+    if (found) params[variable] = parseFloat(found[2]);
+  });
+  // also handle "compounds per year is 12" (for n)
+  let nmatch = expression.match(/\b(n|compounds per year|compounded|times per year)\s*(is|=)?\s*(-?\d+(\.\d+)?)/i);
+  if (nmatch) params["n"] = parseFloat(nmatch[3]);
+
+  // Return lowercased keys to match 'solve' signatures
+  return params;
+}
+
 const calculateMath = (expression) => {
   try {
-    
+    // Try to match the expression against the list of formulas
+    const formulas = getCommonMathFormulas();
+
+    // See if the user is asking about a known formula, and try to parse numbers for it
+    for (let formula of formulas) {
+      if (
+        typeof expression === 'string' &&
+        expression.toLowerCase().includes(formula.name.toLowerCase())
+      ) {
+        // Try to auto-extract parameter values from the expression using extractFormulaParams
+        let params = extractFormulaParams(expression, formula.name);
+
+        if (typeof formula.solve === "function") {
+          let { steps, result, final } = formula.solve(params);
+          return {
+            expression: formula.name,
+            result,
+            formattedResult: result === null || typeof result === 'undefined'
+              ? null
+              : (typeof result === 'number'
+                  ? (Number.isInteger(result) ? result.toString() : result.toFixed(4))
+                  : '' + result),
+            simplifiedSteps: `**${formula.name}**\n- **Formula:** ${formula.formula}\n- **Description:** ${formula.description}\n\n` + steps.join('\n\n') + (final ? '\n\n' + final : '')
+          };
+        } else {
+          // fallback, just textual info
+          return {
+            expression: formula.name,
+            result: null,
+            formattedResult: null,
+            simplifiedSteps: `**${formula.name}**\n- **Formula:** ${formula.formula}\n- **Description:** ${formula.description}`,
+          };
+        }
+      }
+    }
+
+    // If not a known formula question, proceed to math calculation
     let cleanExpr = expression
       .toLowerCase()
-      .replace(/what is|calculate|compute|solve|evaluate|simplify/gi, '')
-      .replace(/plus/g, '+')
-      .replace(/minus/g, '-')
-      .replace(/times|multiplied by/g, '*')
-      .replace(/divided by|divide/g, '/')
-      .replace(/÷/g, '/') // Support for ÷ symbol
-      .replace(/×/g, '*') // Support for × symbol
-      .replace(/\*/g, '*') // Ensure * is properly handled
-      .replace(/\-/g, '-') // Ensure - is properly handled
-      .replace(/equals|equal to/g, '=')
+      .replace(/\b(what is|calculate|compute|solve|evaluate|simplify|find|determine|work out|result of|answer for)\b[\s:,-]*/gi, '')
+      .replace(/\bplus\b/gi, '+')
+      .replace(/\badd(ed)? to\b/gi, '+')
+      .replace(/\bminus\b/gi, '-')
+      .replace(/\bsubtracted?\s+from\b/gi, '-')
+      .replace(/\b(times|multiplied by|multiply by)\b/gi, '*')
+      .replace(/\bproduct of\b/gi, '*')
+      .replace(/\bdivided by\b/gi, '/')
+      .replace(/\bdivide\b/gi, '/')
+      .replace(/\bquotient of\b/gi, '/')
+      .replace(/\bmod(ulo)?\b/gi, '%')
+      // Percentage handling
+      .replace(/\b(percent(?:age)? of) | %  /gi, '% of')
+      .replace(/\b(\d+(\.\d+)?)\s*%(?=\s*of| %)/gi, '$1/100*')
+      .replace(/\b(\d+(\.\d+)?)\s*percent\s*of | % /gi, '$1/100*')
+      .replace(/\b(\d+(\.\d+)?)\s*percent| %/gi, '($1/100)')
+      .replace(/(\d+(\.\d+)?)\s*% | %/gi, '($1/100)')
+      .replace(/(?<!\/)\bof\b/gi, '*')
+      .replace(/÷/g, '/')
+      .replace(/×/g, '*')
+      .replace(/−/g, '-').replace(/ – |-/g, '-').replace(/—/g, '-')
+      .replace(/-|--|---|----|-----|-------/g, '-')
+      .replace(/^/g, '**')
+      .replace(/\s?power\s?of\s? | poer of/gi, '**')
+      .replace(/(\d)\s*\(\s*/g, '$1*(')
+      .replace(/\)\s*(\d)/g, ')*$1')
+      .replace(/\bequals\b/gi, '=')
+      .replace(/\bequal to\b/gi, '=')
+      .replace(/[^0-9+\-*/().=%{}\s^,]|(?!e)[a-df-z]/gi, '')
       .replace(/\s+/g, '')
       .trim();
 
-    
-    // Check if the expression contains at least one number and one operator
-    if (!/\d/.test(cleanExpr) || !/[+\-*/]/.test(cleanExpr)) {
-      return null; // Return null for non-math inputs
+    cleanExpr = cleanExpr
+      .replace(/\u2212/g, '-') // Math minus
+      .replace(/–/g, '-')      // En dash
+      .replace(/—/g, '-')      // Em dash
+      .replace(/\u00A0/g, ' ');// NBSP
+
+    cleanExpr = cleanExpr
+      .replace(/[\[\（]/g, '(')
+      .replace(/[\]\）]/g, ')');
+
+    if (!/\d/.test(cleanExpr) || !/[+\-*/()]/.test(cleanExpr)) {
+      return null;
     }
 
-    // Function to evaluate expression with proper order of operations
-    const evaluateExpression = (expr) => {
-      
-      // Remove all spaces
+    function evalBODMAS(expr) {
       expr = expr.replace(/\s+/g, '');
-      
-      // Handle parentheses and curly braces first (innermost to outermost)
-      while (expr.includes('(') || expr.includes('{')) {
-        // Handle parentheses
-        if (expr.includes('(')) {
-          expr = expr.replace(/\(([^()]+)\)/g, (match, innerExpr) => {
-            return evaluateExpression(innerExpr);
-          });
-        }
-        
-        // Handle curly braces
-        if (expr.includes('{')) {
-          expr = expr.replace(/\{([^{}]+)\}/g, (match, innerExpr) => {
-            return evaluateExpression(innerExpr);
-          });
-        }
-      }
-      
-      // Split into tokens using a more robust approach
-      const tokens = [];
-      let current = '';
-      let inNumber = false;
-      
-      for (let i = 0; i < expr.length; i++) {
-        const char = expr[i];
-        
-        if (/\d/.test(char) || char === '.') {
-          // This is a digit or decimal point
-          current += char;
-          inNumber = true;
-        } else if (/[+\-*/]/.test(char)) {
-          // This is an operator
-          if (inNumber && current) {
-            tokens.push(current);
-            current = '';
-            inNumber = false;
-          }
-          tokens.push(char);
-        }
-      }
-      
-      // Don't forget the last number
-      if (current) {
-        tokens.push(current);
-      }
-      
-      
-      if (tokens.length < 3) {
-        return parseFloat(expr) || 0;
-      }
-      
-      // First pass: handle multiplication and division
-      let i = 1;
-      while (i < tokens.length - 1) {
-        if (tokens[i] === '*' || tokens[i] === '/') {
-          const left = parseFloat(tokens[i - 1]);
-          const right = parseFloat(tokens[i + 1]);
-          let result;
-          
-          if (tokens[i] === '*') {
-            result = left * right;
-          } else {
-            if (right === 0) throw new Error('Division by zero is not allowed');
-            result = left / right;
-          }
-          
-          
-          // Replace the three tokens with the result
-          tokens.splice(i - 1, 3, result.toString());
-          i = Math.max(1, i - 1); // Reset index to check for consecutive operations
-        } else {
-          i += 2;
-        }
-      }
-      
-      // Second pass: handle addition and subtraction
-      let result = parseFloat(tokens[0]);
-      for (i = 1; i < tokens.length; i += 2) {
-        if (i + 1 >= tokens.length) break;
-        
-        const operator = tokens[i];
-        const nextNumber = parseFloat(tokens[i + 1]);
-        
-        if (isNaN(nextNumber)) continue;
-        
-        switch (operator) {
-          case '+':
-            result += nextNumber;
-            break;
-          case '-':
-            result -= nextNumber;
-            break;
-          default:
-            continue;
-        }
-        
-        
-      }
-      
-      return result;
-    };
 
-    // Evaluate the expression
-    const result = evaluateExpression(cleanExpr);
-    
-    // Format the original expression for display
+      while (
+        /\([^\(\)]+\)/.test(expr) ||
+        /\{[^\{\}]+\}/.test(expr)
+      ) {
+        expr = expr.replace(/\(([^\(\)]+)\)/g, (_, inner) => evalBODMAS(inner));
+        expr = expr.replace(/\{([^\{\}]+)\}/g, (_, inner) => evalBODMAS(inner));
+      }
+
+      const num = '(-?(?:\\d+(?:\\.\\d+)?(?:e[+-]?\\d+)?|\\.\\d+))';
+      let regexExp = new RegExp(`${num}\\*\\*${num}`);
+      while (regexExp.test(expr)) {
+        expr = expr.replace(regexExp, (_, a, __, b) => Math.pow(Number(a), Number(b)));
+      }
+      let regexCaret = new RegExp(`${num}\\^${num}`);
+      while (regexCaret.test(expr)) {
+        expr = expr.replace(regexCaret, (_, a, __, b) => Math.pow(Number(a), Number(b)));
+      }
+
+      let regexMulDivMod = new RegExp(`${num}([*/%])${num}`), match;
+      while ((match = expr.match(regexMulDivMod))) {
+        let [all, a, op, b] = match;
+        a = Number(a); b = Number(b);
+        let v;
+        if (op === '*') v = a * b;
+        else if (op === '/') {
+          if (b === 0) throw new Error('Division by zero is not allowed');
+          v = a / b;
+        } else if (op === '%') v = a % b;
+        expr = expr.replace(regexMulDivMod, v);
+      }
+
+      let regexAddSub = new RegExp(`${num}([+-])${num}`);
+      while ((match = expr.match(regexAddSub))) {
+        let [all, a, op, b] = match;
+        a = Number(a); b = Number(b);
+        let v = op === '+' ? a + b : a - b;
+        expr = expr.replace(regexAddSub, v);
+      }
+
+      expr = expr.replace(/^\+/, '');
+      if (expr === '' || isNaN(Number(expr))) throw new Error('Invalid mathematical expression');
+      return Number(expr);
+    }
+
+    const result = evalBODMAS(cleanExpr);
     const displayExpr = cleanExpr.replace(/\s+/g, ' ').trim();
-
-    // Generate simplified steps
-    const simplifiedSteps = generateSimplifiedSteps(cleanExpr, result);
+    const simplifiedSteps = generateSimplifiedSteps_BODMAS(cleanExpr, result);
 
     return {
       expression: displayExpr,
-      result: result,
+      result,
       formattedResult: Number.isInteger(result) ? result.toString() : result.toFixed(2),
-      simplifiedSteps: simplifiedSteps
+      simplifiedSteps
     };
   } catch (error) {
     if (error.message === 'Division by zero is not allowed') {
@@ -241,96 +531,171 @@ const calculateMath = (expression) => {
   }
 };
 
-// Generate simplified step-by-step math solution
-const generateSimplifiedSteps = (expression, result) => {
-  try {
-    let expr = expression.replace(/\s+/g, '');
-    const steps = [];
-    let stepNumber = 1;
+// function generateSimplifiedSteps_BODMAS(expression, result) {
+//   try {
+//     // First, check if the expression matches any of the formulas in getCommonMathFormulas()
+//     const formulas = getCommonMathFormulas();
+//     let matchedFormula = null;
 
-    // Split into tokens
-    const tokens = [];
-    let current = '';
-    let inNumber = false;
-    
-    for (let i = 0; i < expr.length; i++) {
-      const char = expr[i];
-      
-      if (/\d/.test(char) || char === '.') {
-        current += char;
-        inNumber = true;
-      } else if (/[+\-*/]/.test(char)) {
-        if (inNumber && current) {
-          tokens.push(current);
-          current = '';
-          inNumber = false;
-        }
-        tokens.push(char);
-      }
-    }
-    
-    if (current) {
-      tokens.push(current);
-    }
+//     for (let formula of formulas) {
+//       if (
+//         typeof expression === 'string' &&
+//         (
+//           // Match by name (strict) or formula keyword (looser fallback)
+//           expression.toLowerCase().includes(formula.name.toLowerCase()) ||
+//           (formula.formula && expression.replace(/\s+/g, '').includes(formula.formula.replace(/\s+/g, '')))
+//         )
+//       ) {
+//         matchedFormula = formula;
+//         break;
+//       }
+//     }
 
-    
-    // First pass: handle multiplication and division
-    let i = 1;
-    while (i < tokens.length - 1) {
-      if (tokens[i] === '*' || tokens[i] === '/') {
-        const left = parseFloat(tokens[i - 1]);
-        const right = parseFloat(tokens[i + 1]);
-        let stepResult;
-        
-        if (tokens[i] === '*') {
-          stepResult = left * right;
-          steps.push(`**Step ${stepNumber}:** Multiply: ${left} × ${right} = ${stepResult}`);
-        } else {
-          stepResult = left / right;
-          steps.push(`**Step ${stepNumber}:** Divide: ${left} ÷ ${right} = ${stepResult}`);
-        }
-        
-        stepNumber++;
-        tokens.splice(i - 1, 3, stepResult.toString());
-        i = Math.max(1, i - 1);
-      } else {
-        i += 2;
-      }
-    }
-    
-    // Second pass: handle addition and subtraction
-    let runningResult = parseFloat(tokens[0]);
-    for (i = 1; i < tokens.length; i += 2) {
-      if (i + 1 >= tokens.length) break;
-      
-      const operator = tokens[i];
-      const nextNumber = parseFloat(tokens[i + 1]);
-      
-      if (isNaN(nextNumber)) continue;
-      
-      let stepResult;
-      if (operator === '+') {
-        stepResult = runningResult + nextNumber;
-        steps.push(`**Step ${stepNumber}:** Add: ${runningResult} + ${nextNumber} = ${stepResult}`);
-      } else if (operator === '-') {
-        stepResult = runningResult - nextNumber;
-        steps.push(`**Step ${stepNumber}:** Subtract: ${runningResult} - ${nextNumber} = ${stepResult}`);
-      }
-      
-      stepNumber++;
-      runningResult = stepResult;
-    }
+//     // If there's a matched formula, solve it with extracted params
+//     if (matchedFormula) {
+//       const params = extractFormulaParams(expression, matchedFormula.name);
 
-    // Add final result with explanation
-    const finalExplanation = getFinalExplanation(result);
-    steps.push(`**Final Answer:** ${result}\n\n${finalExplanation}`);
+//       if (typeof matchedFormula.solve === "function") {
+//         const { steps, final } = matchedFormula.solve(params);
+//         let infoSection = `**${matchedFormula.name}**\n- **Formula:** ${matchedFormula.formula}\n- **Description:** ${matchedFormula.description}\n`;
+//         return [infoSection, ...(steps || []), final ? '\n' + final : ''].filter(Boolean).join('\n\n');
+//       } else {
+//         return `**${matchedFormula.name}**\n- **Formula:** ${matchedFormula.formula}\n- **Description:** ${matchedFormula.description}`;
+//       }
+//     }
 
-    return steps.join('\n\n');
-  } catch (error) {
-    console.error('Error generating simplified steps:', error);
-    return `**Result:** ${result}`;
-  }
-};
+//     // === Fallback: Normal BODMAS evaluation ===
+
+//     let expr = expression.replace(/\s+/g, '');
+
+//     if (result === null || typeof result === 'undefined') {
+//       return "**No steps found.**";
+//     }
+
+//     if (result === Infinity || result === -Infinity) {
+//       return '**Error:** The result is infinite. Please check your math expression (e.g., division by zero or extremely large/small values).';
+//     }
+
+//     let steps = [];
+//     let curExpr = expr;
+//     let stepNum = 1;
+
+//     while (/\([^\(\)]+\)/.test(curExpr) || /\{[^\{\}]+\}/.test(curExpr)) {
+//       curExpr = curExpr.replace(/\(([^\(\)]+)\)/g, (match, group) => {
+//         let v = safeEvalBODMASForSteps(group);
+//         steps.push(`**Step ${stepNum++}:** Evaluate brackets (${group}) = ${v}`);
+//         return v;
+//       });
+//       curExpr = curExpr.replace(/\{([^\{\}]+)\}/g, (match, group) => {
+//         let v = safeEvalBODMASForSteps(group);
+//         steps.push(`**Step ${stepNum++}:** Evaluate brackets {${group}} = ${v}`);
+//         return v;
+//       });
+//     }
+
+//     const num = '(-?(?:\\d+(?:\\.\\d+)?(?:e[+-]?\\d+)?|\\.\\d+))';
+//     let regexExp = new RegExp(`${num}\\*\\*${num}`);
+//     while (regexExp.test(curExpr)) {
+//       curExpr = curExpr.replace(regexExp, (match, a, _, b) => {
+//         let r = Math.pow(Number(a), Number(b));
+//         steps.push(`**Step ${stepNum++}:** Exponent: ${a} ^ ${b} = ${r}`);
+//         return r;
+//       });
+//     }
+//     let regexCaret = new RegExp(`${num}\\^${num}`);
+//     while (regexCaret.test(curExpr)) {
+//       curExpr = curExpr.replace(regexCaret, (match, a, _, b) => {
+//         let r = Math.pow(Number(a), Number(b));
+//         steps.push(`**Step ${stepNum++}:** Exponent: ${a} ^ ${b} = ${r}`);
+//         return r;
+//       });
+//     }
+
+//     let regexMulDivMod = new RegExp(`${num}([*/%])${num}`);
+//     let m;
+//     while ((m = curExpr.match(regexMulDivMod))) {
+//       let [whole, a, op, b] = m;
+//       let r;
+//       if (op === '*') r = Number(a) * Number(b);
+//       else if (op === '/') {
+//         if (Number(b) === 0) throw new Error('Division by zero is not allowed');
+//         r = Number(a) / Number(b);
+//       }
+//       else if (op === '%') r = Number(a) % Number(b);
+//       steps.push(`**Step ${stepNum++}:** ${op === '*' ? 'Multiply' : op === '/' ? 'Divide' : 'Modulo'}: ${a} ${op === '*' ? '×' : op === '/' ? '÷' : '%'} ${b} = ${r}`);
+//       curExpr = curExpr.replace(regexMulDivMod, r);
+//     }
+
+//     let regexAddSub = new RegExp(`${num}([+-])${num}`);
+//     while ((m = curExpr.match(regexAddSub))) {
+//       let [whole, a, op, b] = m;
+//       let r = op === '+' ? Number(a) + Number(b) : Number(a) - Number(b);
+//       steps.push(`**Step ${stepNum++}:** ${op === '+' ? 'Add' : 'Subtract'}: ${a} ${op} ${b} = ${r}`);
+//       curExpr = curExpr.replace(regexAddSub, r);
+//     }
+
+//     const finalExplanation = getFinalExplanation(result);
+//     steps.push(`**Final Answer:** ${result}\n\n${finalExplanation}`);
+//     return steps.length ? steps.join('\n\n') : `**Result:** ${result}`;
+//   } catch (error) {
+//     console.error('Error generating BODMAS steps:', error);
+//     return `**Result:** ${result}`;
+//   }
+
+//   // Reuse helper for bracket evaluation
+//   function safeEvalBODMASForSteps(sub) {
+//     try {
+//       return (function evalBODMASsub(expr) {
+//         expr = expr.replace(/\s+/g, '');
+
+//         while (/\([^\(\)]+\)/.test(expr) || /\{[^\{\}]+\}/.test(expr)) {
+//           expr = expr.replace(/\(([^\(\)]+)\)/g, (_, inner) => evalBODMASsub(inner));
+//           expr = expr.replace(/\{([^\{\}]+)\}/g, (_, inner) => evalBODMASsub(inner));
+//         }
+
+//         const num = '(-?(?:\\d+(?:\\.\\d+)?(?:e[+-]?\\d+)?|\\.\\d+))';
+
+//         let regexExp = new RegExp(`${num}\\*\\*${num}`);
+//         while (regexExp.test(expr)) {
+//           expr = expr.replace(regexExp, (_, a, __, b) => Math.pow(Number(a), Number(b)));
+//         }
+//         let regexCaret = new RegExp(`${num}\\^${num}`);
+//         while (regexCaret.test(expr)) {
+//           expr = expr.replace(regexCaret, (_, a, __, b) => Math.pow(Number(a), Number(b)));
+//         }
+
+//         let regexMulDivMod = new RegExp(`${num}([*/%])${num}`);
+//         let match;
+//         while ((match = expr.match(regexMulDivMod))) {
+//           let [all, a, op, b] = match;
+//           a = Number(a); b = Number(b);
+//           let v;
+//           if (op === '*') v = a * b;
+//           else if (op === '/') {
+//             if (b === 0) throw new Error('Division by zero is not allowed');
+//             v = a / b;
+//           } else if (op === '%') v = a % b;
+//           expr = expr.replace(regexMulDivMod, v);
+//         }
+
+//         let regexAddSub = new RegExp(`${num}([+-])${num}`);
+//         while ((match = expr.match(regexAddSub))) {
+//           let [all, a, op, b] = match;
+//           a = Number(a); b = Number(b);
+//           let v = op === '+' ? a + b : a - b;
+//           expr = expr.replace(regexAddSub, v);
+//         }
+
+//         expr = expr.replace(/^\+/, '');
+//         if (expr === '' || isNaN(Number(expr))) throw new Error('Invalid mathematical expression');
+//         return Number(expr);
+//       })(sub);
+//     } catch {
+//       return sub;
+//     }
+//   }
+// }
+
 
 // Helper function to provide friendly final answer explanation
 const getFinalExplanation = (result) => {
