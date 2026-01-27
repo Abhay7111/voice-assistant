@@ -2208,7 +2208,7 @@ const VoiceAssistant = () => {
             onChange={handleInputChange}
             onKeyDown={handleInputKeyDown}
             placeholder={`Ask me ${selectedCategories.length === 1 ? 'anything' : 'on this'} ${!selectedCategories.includes('all') ? ` (${selectedCategories.join(', ')})` : ''} ${selectedCategories.length === 1 ? '' : 'topics'}... (or type /code, /newcode, /math, /newmath)`}
-            className={`w-full px-6 h-12 ${isDarkTheme? 'bg-zinc-700' : 'bg-zinc-300'} border border-zinc-200 dark:border-zinc-600 rounded-lg focus:outline-none focus:ring-4 focus:ring-zinc-500/20 dark:focus:ring-zinc-400/20 focus:border-transparent transition-all duration-300 ${isDarkTheme ? 'text-zinc-300' : 'text-zinc-700'} placeholder-zinc-400 dark:placeholder-zinc-500 text-sm shadow-md focus:shadow-zinc-400`}
+            className={`w-full px-6 h-12 ${isDarkTheme? 'bg-zinc-800' : 'bg-zinc-300'} border border-zinc-200 dark:border-zinc-600 rounded-lg focus:outline-none focus:ring-4 focus:ring-zinc-500/20 dark:focus:ring-zinc-400/20 focus:border-transparent transition-all duration-300 ${isDarkTheme ? 'text-zinc-100' : 'text-zinc-700'} placeholder-zinc-400 dark:placeholder-zinc-500 text-sm shadow-md focus:shadow-zinc-400`}
             autoComplete="off"
           />
           
