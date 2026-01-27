@@ -722,6 +722,7 @@ const VoiceAssistant = () => {
   const [userGender, setUserGender] = useState(null); // 'girl' | 'boy' | null
   const [thinking, setThinking] = useState(false);
   const hasWishedRef = useRef(false);
+  const [soundOn, setSoundOn] = useState(false);
 
   // Category state
   const [showCategory, setShowCategory] = useState(false);
@@ -1261,6 +1262,28 @@ const VoiceAssistant = () => {
         setMessage('');
         return;
       }
+      if (message.trim() === '/sound on') {
+        setSoundOn(true);
+        setShowMathForm(false);
+        setShowCodeCategory(false);
+        setShowNewCodeForm(false);
+        setShowCategory(false);
+        setShowCategoryButton(false);
+        setMessage('');
+        {speak('Sound turned on.');}
+        return;
+      }
+      if (message.trim() === '/sound off') {
+        setSoundOn(false);
+        setShowMathForm(false);
+        setShowCodeCategory(false);
+        setShowNewCodeForm(false);
+        setShowCategory(false);
+        setShowCategoryButton(false);
+        {speak('Sound turned off.');}
+        setMessage('');
+        return;
+      }
       lastCommandFromInputRef.current = true;
       takeCommand(message, { fromInput: true });
       setMessage('');
@@ -1652,7 +1675,7 @@ const VoiceAssistant = () => {
 
     apiTimeoutRef.current = setTimeout(() => {
       if (loading && !apiFallbackSpokenRef.current) {
-        speak("I'm still trying to fix it");
+        speak("I'm still trying to gathering my knowledge. Please wait a bit longer.");
         apiFallbackSpokenRef.current = true;
       }
     }, 5000);
@@ -1673,7 +1696,7 @@ const VoiceAssistant = () => {
           clearTimeout(apiTimeoutRef.current);
         }
       } catch (error) {
-        setError('Failed to load assistant data.');
+        setError('Failed to gather assistant knowledge.');
         setDataLoaded(true);
         
         // Only stop loading if both error occurred AND minimum time has passed
@@ -1751,58 +1774,71 @@ const VoiceAssistant = () => {
       }, 100);
     }
   }, [thinking]);
-  if (loading) return <div className='va-loading p-4 w-full h-full flex items-center justify-center'><div className='size-10 flex items-center justify-center animate-spin bg-transparent'><i className='text-xl font-medium ri-loader-4-line'></i></div>We are Loading data...</div>;
+
+  if (loading) return <div className='va-loading p-4 w-full h-full flex items-center justify-center'><div className='size-10 flex items-center justify-center animate-spin bg-transparent'><i className='text-xl font-medium ri-loader-4-line'></i></div>Gathering knowledge...</div>;
   return (
     <div className="voice-assistant h-full w-full flex flex-col justify-end p-2">
+
       {/* Nav */}
+
       <div className="va-nav w-full min-h-10 mb-3 px-3 rounded-md flex items-center justify-between">
         <div className='w-fit'><h1 className='va-nav-title text-2xl font-medium'>Gaama.<span className='text-sm font-mediu lowercase'>AI</span></h1></div>
         <div className='w-fit flex items-center gap-2'>
 
           {/* Categories Button */}
-        <button
-          type="button"
-          onClick={() => setShowCategoryButton(!showCategoryButton)}
-          className={`va-category-item ${selectedCategories.length === 1 ? 'selected' : ''} transition-all duration-300 px-2 py-0.5 text-sm cursor-pointer flex items-center gap-0.5`}
-        >
-          <i className="ri-list-check text-lg"></i>
-          Categories ({selectedCategories.length})
-        </button>
+
+        <div className='flex items-center justify-end gap-0'>
+          <button
+            type="button"
+            onClick={() => setShowCategoryButton(!showCategoryButton)}
+            className={`va-category-item ${selectedCategories.length === 1 ? 'selected' : ''} transition-all duration-300 px-2 py-0.5 text-sm cursor-pointer flex items-center gap-0.5`}
+          >
+            <i className="ri-list-check text-lg"></i>
+            Categories ({selectedCategories.length})
+          </button>
+
+          <div onClick={() => setSoundOn((prev) => !prev )} className='size-7 rounded-md bg-zinc-100 hover:bg-zinc-200 cursor-pointer transition-all duration-300 flex items-center justify-center'>
+            <i className={` ${soundOn ? 'ri-volume-up-line' : 'ri-volume-mute-line'} text-lg`}></i>
+          </div>
+        </div>
           
       </div>
       </div>
+
       {/* Chat History */}
+
       <div className="flex flex-col gap-2 overflow-y-auto h-full mb-4 scroll-smooth relative">
         {chatHistory.length === 0 && (
           <div className="absolute inset-0 va-nav-title flex items-center justify-center bg-transparent z-20 rounded-md">
-            <div className='w-full h-full bg-transparent rounded-md p-2 flex flex-col items-start justify-start gap-2'>
+            <div className='w-full h-full bg-transparent rounded-md p-2 flex flex-col items-center justify-center gap-2'>
               {error && (
                 <div className="va-error px-5 py-1 rounded-md">{error}</div>
               )}
-              <p className="va-modal-text px-2 py-1 rounded-md border w-full max-w-[85%]">
-              {8 <= 8 
-                ? "Sir, I don't have enough knowledge right now to assist you properly. I'm still learning and gathering information. Please be patient with me as I improve." 
-                : "Sir, I have a lot of data available. I'm ready to assist you with accurate and helpful information to the best of my ability."}
+              <h1 className='text-2xl font-semibold'>Wellcome {`Abhay7111`}</h1>
+              <p className=" max-w-[35%] va-modal-text rounded-md text-center flex flex-col items-center justify-center p-2">
+              {!Datacount <= 8 
+                ? "Abhay7111, I don't have enough knowledge right now to assist you properly. I'm still learning and gathering information. Please be patient with me as I improve." 
+                : "Abhay7111, I have a lot of data available. I'm ready to assist you with accurate and helpful information to the best of my ability."}
               </p>
-              {!Datacount == 0 && <p className='va-modal-text px-2 py-1 rounded-md border w-full max-w-[85%]'>If you're willing to guide me, I'd be truly grateful. Learning from you would be an excellent opportunity to grow, improve my skills, and contribute more effectively.</p>}
-              {!Datacount == 0 && <p className='va-modal-text px-2 py-1 rounded-md border w-full max-w-[85%]'>I'm eager to learn more. I would sincerely appreciate your guidance and support in <NavLink to={`/train`} className='va-link'>helping</NavLink> me to grow.</p>}
-              {Datacount <= 99 && <p className='va-modal-text px-2 py-2 rounded-md border w-full max-w-[85%] flex flex-wrap gap-2 leading-4'>I have knowledge on <span>  math, {Questions}</span></p>}
             </div>
           </div>
         )}
+
+        {/* Chat History Items */}
+
         {Array.isArray(chatHistory) && chatHistory.length > 0 && chatHistory.map((chat, index) => (
           <div
             key={index}
-            className={`w-full flex ${chat.type === 'user' ? 'justify-end' : 'justify-start'}`}
+            className={`max-w-full flex ${chat.type === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`max-w-[95%] px-3 py-0.5 rounded-lg break-words text-sm ${
+              className={`max-w-[85%] px-3 py-0.5 rounded-lg break-words text-sm ${
                 chat.type === 'user'
                   ? 'bg-transparent va-chat-user min-h-10 flex items-center justify-center text-nowrap'
                   : 'bg-transparent va-chat-bot text-wrap py-1 break-words overflow-hidden'
               }`}
             >
-              <div className="relative mb-1">
+              <div className="relative mb-1 ">
                 {chat.text && (
                   <div className="flex flex-col items-start justify-start gap-2">
                     <div className="markdown">
@@ -1816,6 +1852,8 @@ const VoiceAssistant = () => {
                               speed={80}
                               delay={index * 100}
                             />
+
+                            {soundOn && speak(chat.text)}
                           </div>
                         </div>
                       )}
@@ -1856,9 +1894,12 @@ const VoiceAssistant = () => {
               )}
 
               {/* Copy to clipboard button for assistant messages */}
+
               {chat.type !== 'user' && (
                 <div id='testing' className='flex items-center w-full h-fit bg-transparent gap-2 rounded-md'>
+
                   {/* Copy button */}
+
                   <span>
                     <div className="h-fit w-full flex items-center justify-start gap-2 mt-1">
                       <button
@@ -1899,7 +1940,9 @@ const VoiceAssistant = () => {
                       </button>
                     </div>
                   </span>
+
                   {/* Open in Google button when data not found */}
+
                   {chat.googleQuery && (
                     <button
                       type="button"
@@ -1912,6 +1955,7 @@ const VoiceAssistant = () => {
                   )}
                   
                   {/* Math Form Button - Show when math calculation fails */}
+                  
                   {chat.showMathForm && (
                     <button
                       type="button"
@@ -1925,6 +1969,7 @@ const VoiceAssistant = () => {
                   )}
                   
                   {/* Category show */}
+
                   {/* {chat.category && (
                     <span className="text-xs text-zinc-400 px-2 py-1 rounded">
                       {chat.category}
@@ -1937,56 +1982,24 @@ const VoiceAssistant = () => {
         ))}
         <div ref={chatEndRef} />
       </div>
-      {/* Category List */}
-      {/* {showCategory && categories.length > 0 && (
-        <div className="mb-2 w-full max-h-96 rounded-xl border overflow-auto border-zinc-700 bg-zinc-800 shadow-lg z-50">
-          <div className="p-2">
-            <div className=" text-zinc-300/70 font-medium text-base">
-              I have {categories.length} {categories.length === 1 ? 'Category' : 'Categories'}
-            </div>
-            <div className="flex flex-col gap-0.5">
-              {categories.map((cat, idx) => {
-                const isSelected = selectedCategories.includes(cat);
-                return (
-                  <>
-                    <label
-                    key={cat + idx}
-                    className={`flex items-center gap-2 hover:bg-zinc-700/30 text-start cursor-pointer rounded text-sm transition line-clamp-1 ${
-                      isSelected ? 'text-zinc-200' : 'text-zinc-500'
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={() => handleCategoryToggle(cat)}
-                      className="accent-cyan-400"
-                    />
-                    <span className="truncate">{cat}</span>
-                  </label>
-                  </>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )} */}
 
       {/* Code Category Display */}
+
       {showCodeCategory && (
-        <div className="mb-2 w-full max-w-[700px] left-1/2 -translate-x-1/2 bottom-15 absolute max-h-96 rounded-xl overflow-auto border border-zinc-700 bg-zinc-800/30 backdrop-blur shadow-lg z-50">
+        <div className="mb-2 w-full max-w-[700px] left-1/2 -translate-x-1/2 bottom-15 absolute max-h-96 rounded-xl overflow-auto border border-zinc-700 bg-zinc-100 backdrop-blur shadow-lg z-50">
           <div className="p-4">
-            <div className="text-zinc-300/70 font-medium text-base mb-3 flex items-center gap-2">
+            <div className="text-zinc-800/70 font-medium text-base mb-3 flex items-center gap-2">
               <i className="ri-code-s-slash-line text-lg"></i>
               Code Category - All Code Related Questions and Answers
             </div>
             <div className="space-y-3">
               {data.filter(item => item.category === 'code').map((item, idx) => (
-                <div key={idx} className="border border-zinc-700/50 rounded-lg p-3 bg-zinc-800">
-                  <div className="text-zinc-200 font-medium mb-2">
+                <div key={idx} className="border border-zinc-700/50 rounded-lg p-3 bg-zinc-200">
+                  <div className="text-zinc-600 font-semibold mb-2">
                     <i className="ri-question-line mr-2"></i>
                     {item.question}
                   </div>
-                  <div className="text-zinc-400 text-sm whitespace-pre-wrap">
+                  <div className="text-zinc-600 text-sm whitespace-pre-wrap">
                     {item.answer}
                   </div>
                 </div>
@@ -2002,6 +2015,7 @@ const VoiceAssistant = () => {
       )}
 
       {/* New Code Form */}
+
       {showNewCodeForm && (
         <div className="mb-2 w-full max-w-2xl rounded-xl border border-zinc-700 bg-zinc-900 shadow-lg z-50">
           <div className="p-4">
@@ -2104,6 +2118,7 @@ const VoiceAssistant = () => {
       )}
 
       {/* New Math Form */}
+
       {showMathForm && (
         <div className="mb-2 w-full max-w-2xl rounded-xl border border-zinc-700 bg-zinc-900 shadow-lg z-50">
           <div className="p-4">
@@ -2167,6 +2182,7 @@ const VoiceAssistant = () => {
       )}
 
       {/* Google Search Consent */}
+
       {showGoogleButton && googleSearchQuery && (
         <div className="va-google-consent mb-3 w-full rounded-lg p-2 flex items-end justify-between gap-2">
           <div className="va-google-text font-medium text-sm">
@@ -2192,29 +2208,30 @@ const VoiceAssistant = () => {
       )}
 
       {/* Thinking Indicator */}
+
       {thinking && (
-        <div className={`${isDarkTheme? 'bg-zinc-700' : 'bg-zinc-300 '} text-xs border-zinc-500 border mb-2 w-fit max-w-[95%] px-3 py-1 rounded-lg bg-transparent flex items-center gap-2 absolute bottom-15 left-2 z-50`}>
+        <div className={` backdrop-blur-[3px] bg-zinc-600/20 text-xs border-zinc-400 border mb-2 w-fit max-w-[95%] px-3 py-1 rounded flex items-center gap-2 absolute bottom-15 left-2 z-50`}>
           <i className="ri-loader-4-line animate-spin" />
           <span>Thinking...</span>
         </div>
       )}
 
-      {/* Input & Buttons */}
-      <form onSubmit={handleInputSubmit} className="flex gap-2 w-full relative">
-        <div className="flex-1 relative">
+      {/* Input & Buttons ** Form started from here ** */}
+      
+      <form onSubmit={handleInputSubmit} className="flex items-center justify-center gap-2 w-full relative">
+        <div className="relative "> 
           <input
             type="text"
             value={message}
             onChange={handleInputChange}
             onKeyDown={handleInputKeyDown}
             placeholder={`Ask me ${selectedCategories.length === 1 ? 'anything' : 'on this'} ${!selectedCategories.includes('all') ? ` (${selectedCategories.join(', ')})` : ''} ${selectedCategories.length === 1 ? '' : 'topics'}... (or type /code, /newcode, /math, /newmath)`}
-            className={`w-full px-6 h-12 ${isDarkTheme? 'bg-zinc-800' : 'bg-zinc-300'} border border-zinc-200 dark:border-zinc-600 rounded-lg focus:outline-none focus:ring-4 focus:ring-zinc-500/20 dark:focus:ring-zinc-400/20 focus:border-transparent transition-all duration-300 ${isDarkTheme ? 'text-zinc-100' : 'text-zinc-700'} placeholder-zinc-400 dark:placeholder-zinc-500 text-sm shadow-md focus:shadow-zinc-400`}
+            className={`w-[550px] px-6 h-12 ${isDarkTheme? 'bg-zinc-100' : 'bg-zinc-300'} border border-zinc-600 dark:border-zinc-400 rounded-lg focus:outline-none focus:ring-1 focus:ring-zinc-500/20 dark:focus:ring-zinc-400/20 focus:border-zinc-100 transition-all duration-300 ${isDarkTheme ? 'text-zinc-300' : 'text-zinc-600'} placeholder-zinc-400 dark:placeholder-zinc-500 text-base shadow-md focus:shadow-zinc-400`}
             autoComplete="off"
           />
           
-          {/* Show selected categories indicator */}
-          
-          {/* Autocomplete Suggestions */}
+          {/* Show selected categories indicator ** Autocomplete Suggestions ** */}
+
           {showSuggestions && suggestions.length > 0 && (
             <div className="va-suggestions absolute z-50 bottom-full left-0 right-0 mb-3 rounded-xl shadow-2xl h-fit max-h-96 overflow-y-auto backdrop-blur">
               {suggestions.slice(0, 5).map((suggestion, idx) => {
@@ -2242,18 +2259,24 @@ const VoiceAssistant = () => {
             </div>
           )}
         </div>
+
+          {/* Send Button */}
+
         <button
           type="submit"
           onClick={() => setallData(false)}
-          className={` ${isDarkTheme? 'bg-zinc-700' : 'bg-zinc-300'} size-12 flex items-center justify-center rounded-md cursor-pointer`}
+          className={` ${isDarkTheme? 'bg-zinc-200 text-zinc-700' : 'bg-zinc-300'} size-12 flex items-center justify-center rounded-md cursor-pointer`}
         >
-          <i className={`ri-send-plane-fill text-2xl ${message.length > 1 ? 'opacity-95 scale-100' : 'opacity-40 scale-70'} transition-all duration-300 `}></i>
+          <i className={`ri-send-plane-fill text-2xl ${message.length >= 1 ? 'opacity-95 scale-100' : 'opacity-40 scale-80'} transition-all duration-300 `}></i>
         </button>
+
+        {/* mike button */}
+
         <button
           ref={btnRef}
           onClick={handleStartListening}
           type="button"
-          className={`${isDarkTheme? 'bg-zinc-700' : 'bg-zinc-300'} flex items-center cursor-pointer justify-center size-12 rounded-md overflow-hidden font-semibold transition text-xl ${
+          className={`${isDarkTheme? 'bg-zinc-200 text-zinc-700' : 'bg-zinc-300'} flex items-center cursor-pointer justify-center size-12 rounded-md overflow-hidden font-semibold transition text-xl ${
             listening ? 'va-button-primary' : ''
           }`}
           disabled={listening}
@@ -2267,16 +2290,17 @@ const VoiceAssistant = () => {
         </button>
       </form>
       
-      {/* Categories with Related Content */}
+      {/* Categories with Related Content ** Categories popup ** */}
+
       {showCategoryButton && (
-        <div className="va-categories absolute bottom-20 z-30 left-1/2 -translate-x-1/2 w-[90vw] max-w-[650px] mx-auto rounded-lg shadow-lg overflow-hidden">
+        <div className=" max-h-[87%] va-categories absolute bottom-20 z-30 left-1/2 -translate-x-1/2 w-[90vw] max-w-[650px] mx-auto rounded-lg shadow-lg overflow-hidden overflow-y-auto">
           <div className="p-3">
             <div className="va-modal-title mb-3 font-medium text-base flex items-center justify-between">
-              <span>Categories with Related Content</span>
+              <span className='text-xl font-semibold'>Categories with Related Content</span>
               {Datacount <= 999 && (
                 <NavLink
                   to={`/train`}
-                  className="text-blue-400/70 hover:text-blue-400 text-sm font-medium hover:underline"
+                  className="text-blue-500/80 hover:text-blue-400 text-sm font-medium hover:underline"
                 >
                   Teach me
                 </NavLink>
@@ -2330,6 +2354,7 @@ const VoiceAssistant = () => {
       )}
 
       {/* Show all data */}
+
         {allData && (
           <div className="va-all-data w-[97%] max-w-2xl rounded-md p-2 absolute left-1/2 bottom-16 -translate-x-1/2 -translate-y-0 z-50">
             {Array.isArray(data) && data.length > 0 ? (
