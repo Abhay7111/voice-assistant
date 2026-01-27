@@ -8,14 +8,6 @@ const TypewriterMarkdown = ({ text, speed = 80, delay = 0 }) => {
   const [displayText, setDisplayText] = useState('');
   const [currentIndex, setCurrentIndex] = useState(0);
   const API = 'https://server-01-v2cx.onrender.com/getassistant';
-
-  useEffect(() => {
-    axios.get(API)
-      .then(res => {
-      })
-      .catch(err => {
-      });
-  }, []);
   
 
   useEffect(() => {
@@ -1617,7 +1609,7 @@ const VoiceAssistant = () => {
     let recognition;
     try {
       recognition = new SpeechRecognition();
-    } catch (e) {
+    } catch (err) {
       setError('Speech recognition could not be initialized.');
       return;
     }
