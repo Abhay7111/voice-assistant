@@ -826,6 +826,11 @@ const wishMe = () => {
   });
 }
 
+    // Helper: get tag(s) from item (tag only; do not use category for related data in chat)
+    const getItemTags = (item) => {
+      if (item.tag == null) return [];
+      return Array.isArray(item.tag) ? item.tag.filter(Boolean) : [String(item.tag)];
+    };
 
    // --- Check for math questions in filteredData ---
 let mathMatchedItem = filteredData.find(item => {
@@ -851,6 +856,14 @@ let mathMatchedItem = filteredData.find(item => {
     // If math question found in API, use that instead of calculation
     if (mathMatchedItem) {
       const { answer, link, image, file, open } = mathMatchedItem;
+      const matchedTags = getItemTags(mathMatchedItem);
+      const matchedTag = matchedTags[0] || null;
+      const sameTagItems = matchedTag
+        ? filteredData.filter(item => {
+            const itemTags = getItemTags(item);
+            return itemTags.length > 0 && itemTags.some(t => matchedTags.includes(t));
+          })
+        : [];
       setChatHistory(prev => [
         ...prev,
         {
@@ -859,7 +872,9 @@ let mathMatchedItem = filteredData.find(item => {
           link,
           image,
           file,
-          open
+          open,
+          matchedTag,
+          sameTagItems: sameTagItems.length > 1 ? sameTagItems : undefined
         }
       ]);
       if (!fromInput) speak(`I found this math problem in my database: ${answer}`);
@@ -886,6 +901,15 @@ let mathMatchedItem = filteredData.find(item => {
 
     if (matchedItem) {
       const { answer, link, image, file, open } = matchedItem;
+      const matchedTags = getItemTags(matchedItem);
+      const matchedTag = matchedTags[0] || null;
+      // Related data in chat: use tag only (items that share at least one tag with the matched item)
+      const sameTagItems = matchedTag
+        ? filteredData.filter(item => {
+            const itemTags = getItemTags(item);
+            return itemTags.length > 0 && itemTags.some(t => matchedTags.includes(t));
+          })
+        : [];
       let displayAnswer = answer;
       if (selectedCategories.includes('markdown')) {
         displayAnswer = markdownToSpeechText(answer);
@@ -898,7 +922,9 @@ let mathMatchedItem = filteredData.find(item => {
           link,
           image,
           file,
-          open
+          open,
+          matchedTag,
+          sameTagItems: sameTagItems.length > 1 ? sameTagItems : undefined
         }
       ]);
       if (!fromInput) speak(answer, true);
@@ -911,7 +937,7 @@ let mathMatchedItem = filteredData.find(item => {
       return;
     }
 
-if (lowerMsg.includes('play music')) {
+    if (lowerMsg.includes('play music')) {
   if (!fromInput) speak('Playing music...');
 
   // Stop any previous music
@@ -1711,12 +1737,61 @@ const handleStartListening = () => {
                 )}
               </div>
 
-              {chat.image && (
-                <img
-                  src={chat.image}
-                  alt="chat-img"
-                  className="mt-2 rounded-md max-w-[80vw] md:max-w-[60vw] lg:max-w-[40vw]"
-                />
+              {(() => {
+                const images = Array.isArray(chat.image)
+                  ? chat.image.filter(Boolean)
+                  : chat.image
+                    ? [chat.image]
+                    : [];
+                return images.length > 0 ? (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {images.map((src, i) => (
+                      <img
+                        key={i}
+                        src={src}
+                        alt={`chat-img-${i + 1}`}
+                        className="rounded-2xl max-w-[80vw] md:max-w-[60vw] lg:max-w-[40vw]"
+                      />
+                    ))}
+                  </div>
+                ) : null;
+              })()}
+
+              {chat.type === 'bot' && chat.matchedTag && chat.sameTagItems && chat.sameTagItems.length > 0 && (
+                <div className="mt-3 pt-3">
+                  <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                    {chat.sameTagItems.map((item, i) => (
+                      <div
+                        key={i}
+                        className=" text-left size-40 md:size-60 overflow-hidden rounded-2xl flex items-center justify-center"
+                      >
+                        {!item.image && (
+                          <div className="text-xs text-cyan-400/90 font-medium mb-0.5">{item.question}</div>
+                        )}
+                        {!item.image && (
+                          <div className="text-sm text-zinc-300 markdown prose prose-invert prose-sm max-w-none">
+                            <Markdown>{item.answer}</Markdown>
+                          </div>
+                        )}
+                        
+                        {item.image && (
+                          <div className="mt-1 flex flex-wrap gap-1">
+                            {(Array.isArray(item.image) ? item.image : [item.image]).filter(Boolean).map((src, j) => (
+                              <a
+                              href={item.link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-md text-zinc-600 hover:underline mt-1 inline-block w-full h-full"
+                            >
+                              <img key={j} src={src} alt="" className="w-full rounded object-contain opacity-80 hover:opacity-100 transition-all duration-300" />
+                              </a>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
 
               {/* Copy to clipboard button for assistant messages */}

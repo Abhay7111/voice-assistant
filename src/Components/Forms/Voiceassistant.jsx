@@ -22,12 +22,14 @@ function Assistant() {
     link: '',
     image: '',
     file: '', 
-    category: 'general'
+    category: 'general',
+    tag: []
   });
   const [status, setStatus] = useState(null);
   const [categories, setCategories] = useState(['General']);
   const [loadingCategories, setLoadingCategories] = useState(false);
   const [newCategory, setNewCategory] = useState('');
+  const [tagInput, setTagInput] = useState('');
   const skipCategoryReload = useRef(false);
 
   // Markdown preview popup state
@@ -100,7 +102,8 @@ function Assistant() {
           link: '',
           image: '',
           file: '',
-          category: categories[0] || 'General'
+          category: categories[0] || 'General',
+          tag: []
         });
       } else {
         setStatus('error');
@@ -144,6 +147,26 @@ function Assistant() {
         category: categories[0] || 'General'
       }));
       setNewCategory('');
+    }
+  };
+
+  const addTag = () => {
+    const t = tagInput.trim();
+    if (!t) return;
+    const normalized = t.toLowerCase();
+    if (formData.tag.some(existing => existing.toLowerCase() === normalized)) return;
+    setFormData(prev => ({ ...prev, tag: [...prev.tag, t] }));
+    setTagInput('');
+  };
+
+  const removeTag = (index) => {
+    setFormData(prev => ({ ...prev, tag: prev.tag.filter((_, i) => i !== index) }));
+  };
+
+  const handleTagKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addTag();
     }
   };
 
@@ -305,6 +328,53 @@ function Assistant() {
                   </div>
                 )}
               </div>
+            </div>
+            <div>
+              <label className="block mb-2 font-semibold text-neutral-200 tracking-wide" htmlFor="tag-input">
+                <i className="ri-hashtag mr-1 text-neutral-400" />
+                Tags
+              </label>
+              <div className="flex flex-wrap gap-2 items-center">
+                <input
+                  className={bwInputSm + " flex-1 min-w-[140px]"}
+                  type="text"
+                  id="tag-input"
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  onKeyDown={handleTagKeyDown}
+                  placeholder="Add tag (Enter to add)"
+                  autoComplete="off"
+                />
+                <button
+                  type="button"
+                  className={bwBtnAdd}
+                  onClick={addTag}
+                  disabled={!tagInput.trim()}
+                  aria-label="Add tag"
+                >
+                  <i className="ri-add-line" /> Add
+                </button>
+              </div>
+              {formData.tag.length > 0 && (
+                <ul className="flex flex-wrap gap-2 mt-2 list-none">
+                  {formData.tag.map((t, index) => (
+                    <li
+                      key={`${t}-${index}`}
+                      className="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-zinc-700 text-neutral-200 text-sm border border-zinc-600"
+                    >
+                      <span>{t}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeTag(index)}
+                        className="text-neutral-400 hover:text-white transition p-0.5 rounded"
+                        aria-label={`Remove tag ${t}`}
+                      >
+                        <i className="ri-close-line text-base" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
             <div className="relative">
               <label className="block mb-2 font-semibold text-neutral-200 tracking-wide" htmlFor="answer">
