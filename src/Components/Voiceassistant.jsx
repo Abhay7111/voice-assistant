@@ -3,46 +3,41 @@ import axios from 'axios';
 import Markdown from 'react-markdown';
 import { NavLink } from 'react-router-dom';
 
-// Typewriter Markdown Component
 const TypewriterMarkdown = ({ text, speed = 80, delay = 0 }) => {
   const [displayText, setDisplayText] = useState('');
-  const timerRef = useRef(null);
+  const timeoutRef = useRef(null);
+  const intervalRef = useRef(null);
 
   useEffect(() => {
     setDisplayText('');
     if (!text) return;
-    let idx = 0;
-    const lines = text.split('\n');
-    let words = text.split(' ');
 
-    // Decide whether to animate by word or by line based on content
-    let animateType;
-    if (words.length <= 40) {
-      animateType = 'word';
-    } else {
-      animateType = 'line';
-    }
+    const lines = text.split('\n').filter((l) => l.trim() !== '');
+    const words = text.split(' ').filter((w) => w.trim() !== '');
+
+    // Decide whether to animate by word or line
+    const animateType = words.length <= 40 ? 'word' : 'line';
     const units = animateType === 'word' ? words : lines;
-    let joinedUnit = (arr, n) =>
-      animateType === 'word'
-        ? arr.slice(0, n + 1).join(' ')
-        : arr.slice(0, n + 1).join('\n');
 
-    timerRef.current = setTimeout(() => {
-      let showIdx = 0;
-      const interval = setInterval(() => {
-        setDisplayText(joinedUnit(units, showIdx));
-        showIdx++;
-        if (showIdx >= units.length) {
-          clearInterval(interval);
+    const joinUnits = (arr, n) =>
+      animateType === 'word' ? arr.slice(0, n + 1).join(' ') : arr.slice(0, n + 1).join('\n');
+
+    timeoutRef.current = setTimeout(() => {
+      let idx = 0;
+      intervalRef.current = setInterval(() => {
+        setDisplayText(joinUnits(units, idx));
+        idx++;
+        if (idx >= units.length) {
+          clearInterval(intervalRef.current);
         }
       }, speed);
     }, delay);
 
+    // Cleanup on unmount
     return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      if (intervalRef.current) clearInterval(intervalRef.current);
     };
-    // eslint-disable-next-line
   }, [text, speed, delay]);
 
   return (
@@ -54,208 +49,217 @@ const TypewriterMarkdown = ({ text, speed = 80, delay = 0 }) => {
 
 // Utility: Convert Markdown to plain text for speech
 function markdownToSpeechText(markdown) {
-  let text = markdown.replace(/```[\s\S]*?```/g, '');
+  if (!markdown) return '';
+
+  let text = markdown;
+
+  // Remove code blocks
+  text = text.replace(/```[\s\S]*?```/g, '');
+
+  // Inline code
   text = text.replace(/`([^`]+)`/g, '$1');
+
+  // Headings
   text = text.replace(/^#+\s*(.*)$/gm, '$1');
+
+  // Bold & italic
   text = text.replace(/(\*\*|__)(.*?)\1/g, '$2');
   text = text.replace(/(\*|_)(.*?)\1/g, '$2');
-  text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1, link: $2');
+
+  // Links: only keep text
+  text = text.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+
+  // Images: keep alt text
   text = text.replace(/!\[([^\]]*)\]\([^)]+\)/g, '$1');
+
+  // Blockquotes
   text = text.replace(/^\s*>\s?/gm, '');
+
+  // Unordered list bullets
   text = text.replace(/^\s*[-*+]\s+/gm, '');
+
+  // Numbered lists
   text = text.replace(/^\s*\d+\.\s+/gm, '');
+
+  // Horizontal rules
   text = text.replace(/^---$/gm, '');
+
+  // Replace multiple newlines with a period + space
   text = text.replace(/\n{2,}/g, '. ');
-  text = text.replace(/[#>*_`]/g, '');
+
+  // Remove leftover Markdown symbols that are not part of words
+  text = text.replace(/[#*_`]/g, '');
+
+  // Collapse multiple spaces and trim
   text = text.replace(/\s+/g, ' ').trim();
+
   return text;
 }
 
+
 // Math solving utility
 function getCommonMathFormulas() {
-  // Only add the explicit formula stub, avoiding recursion bug
   return [
     {
-      name: "Evaluate: 12 + 6 × 27 ÷ 3 + 2 – 16 ÷ 8 × 2",
-      formula: "12 + 6 × 27 ÷ 3 + 2 – 16 ÷ 8 × 2",
-      description: "Evaluate the expression 12 + 6 × 27 ÷ 3 + 2 – 16 ÷ 8 × 2 using BODMAS/PEMDAS order.",
+      name: "Evaluate: 12 + 6 * 27 / 3 + 2 - 16 / 8 * 2",
+      formula: "12 + 6 * 27 / 3 + 2 - 16 / 8 * 2",
+      description: "Evaluate the expression 12 + 6 * 27 / 3 + 2 - 16 / 8 * 2 using BODMAS/PEMDAS order.",
       solve: () => {
         let steps = [];
-        steps.push("**Step 1:** Start with the original expression.");
-        steps.push("12 + 6 × 27 ÷ 3 + 2 – 16 ÷ 8 × 2");
-        steps.push("**Step 2:** Calculate 6 × 27:");
-        steps.push("= 12 + 162 ÷ 3 + 2 – 16 ÷ 8 × 2");
-        steps.push("**Step 3:** Calculate 162 ÷ 3:");
-        steps.push("= 12 + 54 + 2 – 16 ÷ 8 × 2");
-        steps.push("**Step 4:** Calculate 16 ÷ 8:");
-        steps.push("= 12 + 54 + 2 – 2 × 2");
-        steps.push("**Step 5:** Calculate 2 × 2:");
-        steps.push("= 12 + 54 + 2 – 4");
-        steps.push("**Step 6:** Calculate 12 + 54:");
-        steps.push("= 66 + 2 – 4");
-        steps.push("**Step 7:** Calculate 66 + 2:");
-        steps.push("= 68 – 4");
-        steps.push("**Step 8:** Calculate 68 – 4:");
+        steps.push("**Step 1:** Start with the original expression:");
+        steps.push("12 + 6 * 27 / 3 + 2 - 16 / 8 * 2");
+
+        steps.push("**Step 2:** Multiply 6 * 27:");
+        steps.push("= 12 + 162 / 3 + 2 - 16 / 8 * 2");
+
+        steps.push("**Step 3:** Divide 162 / 3:");
+        steps.push("= 12 + 54 + 2 - 16 / 8 * 2");
+
+        steps.push("**Step 4:** Divide 16 / 8:");
+        steps.push("= 12 + 54 + 2 - 2 * 2");
+
+        steps.push("**Step 5:** Multiply 2 * 2:");
+        steps.push("= 12 + 54 + 2 - 4");
+
+        steps.push("**Step 6:** Add 12 + 54:");
+        steps.push("= 66 + 2 - 4");
+
+        steps.push("**Step 7:** Add 66 + 2:");
+        steps.push("= 68 - 4");
+
+        steps.push("**Step 8:** Subtract 68 - 4:");
         steps.push("= 64");
-        return { steps, result: 64, final: "The final answer is **64**." };
+
+        return {
+          steps,
+          result: 64,
+          final: "The final answer is **64**."
+        };
       }
     }
-    // Place any more static formula objects here as needed (remove recursion bug)
   ];
 }
 
+
 function extractFormulaParams(expression, formulaName) {
+  if (!expression) return {};
+
   expression = expression.toLowerCase();
   let params = {};
-  const xyRegex = /\(?\s*(x1|x₂|x2|y1|y₂|y2)\s*=?\s*(-?\d+(\.\d+)?)/g;
-  let m2;
-  while ((m2 = xyRegex.exec(expression))) {
-    let key = m2[1].replace(/[₂]/g, '').toLowerCase();
-    params[key] = parseFloat(m2[2]);
-  }
-  const assignRegex = /\b([abcprtxyz][12]?)\s*=?\s*(-?\d+(\.\d+)?)/g;
+
+  // Handle x1, x2, y1, y2 (with subscripts ₁, ₂)
+  const xyRegex = /\(?\s*(x1|x₂|x2|x₁|y1|y₂|y2|y₁)\s*=?\s*(-?\d+(\.\d+)?)/g;
   let m;
+  while ((m = xyRegex.exec(expression))) {
+    let key = m[1].replace(/[₁₂]/g, '').toLowerCase();
+    params[key] = parseFloat(m[2]);
+  }
+
+  // Handle generic variables a, b, c, p, r, t, x, y, z
+  const assignRegex = /\b([abcprtxyz][12]?)\s*=?\s*(-?\d+(\.\d+)?)/g;
   while ((m = assignRegex.exec(expression))) {
     params[m[1].toLowerCase()] = parseFloat(m[2]);
   }
-  [
-    ["radius", "r"],
-    ["principal", "p"],
-    ["rate", "r"],
-    ["time", "t"],
-    ["years", "t"],
-    ["compound", "n"],
-    ["x1", "x1"], ["y1", "y1"], ["x2", "x2"], ["y2", "y2"]
-  ].forEach(([word, variable]) => {
-    let regex = new RegExp(`\\b${word}\\s*(is|=)?\\s*(-?\\d+(\\.\\d+)?)`, "i");
-    let found = expression.match(regex);
-    if (found) params[variable] = parseFloat(found[2]);
+
+  // Common words mapping
+  const wordMap = {
+    radius: "r",
+    principal: "p",
+    rate: "r",
+    time: "t",
+    years: "t",
+    compound: "n",
+  };
+
+  Object.entries(wordMap).forEach(([word, variable]) => {
+    const regex = new RegExp(`\\b${word}\\s*(?:is|=)?\\s*(-?\\d+(\\.\\d+)?)`, "i");
+    const found = expression.match(regex);
+    if (found && found[1] !== undefined) {
+      params[variable] = parseFloat(found[1]);
+    }
   });
-  let nmatch = expression.match(/\b(n|compounds per year|compounded|times per year)\s*(is|=)?\s*(-?\d+(\.\d+)?)/i);
-  if (nmatch) params["n"] = parseFloat(nmatch[3]);
+
+  // n / compounds per year / compounded times
+  const nRegex = /\b(n|compounds per year|compounded|times per year)\s*(?:is|=)?\s*(-?\d+(\.\d+)?)/i;
+  const nmatch = expression.match(nRegex);
+  if (nmatch && nmatch[2] !== undefined) {
+    params["n"] = parseFloat(nmatch[2]);
+  }
+
   return params;
 }
 
-function generateSimplifiedSteps_BODMAS(expression, result) {
-  try {
-    if (result === null || typeof result === 'undefined' || result === '' || isNaN(result)) {
-      return '**No steps found.**';
-    }
-    if (result === Infinity || result === -Infinity) {
-      return '**Error:** The result is infinite. Please check your math expression (e.g., division by zero or extremely large/small values).';
-    }
 
-    let steps = [];
-    let expr = expression.replace(/\s+/g, '');
-    let stepNum = 1;
+function generateSimplifiedSteps_BODMAS(expression) {
+  let steps = [];
+  let stepNum = 1;
 
-    // Bracket expansion
-    while (/\([^\(\)]+\)/.test(expr) || /\{[^\{\}]+\}/.test(expr)) {
-      expr = expr.replace(/\(([^\(\)]+)\)/g, (match, group) => {
-        let v = safeEvalBODMASForSteps(group);
-        steps.push(`**Step ${stepNum++}:** Evaluate brackets (${group}) = ${v}`);
-        return v;
-      });
-      expr = expr.replace(/\{([^\{\}]+)\}/g, (match, group) => {
-        let v = safeEvalBODMASForSteps(group);
-        steps.push(`**Step ${stepNum++}:** Evaluate brackets {${group}} = ${v}`);
-        return v;
+  const num = '(-?(?:\\d+(?:\\.\\d+)?(?:e[+-]?\\d+)?|\\.\\d+))';
+
+  function safeEval(subExpr) {
+    let expr = subExpr.replace(/\s+/g, '');
+
+    // Brackets recursively
+    let bracketPattern = /\([^\(\)]+\)|\{[^\{\}]+\}/;
+    while (bracketPattern.test(expr)) {
+      expr = expr.replace(bracketPattern, (match) => {
+        let inner = match.replace(/[\(\)\{\}]/g, '');
+        let val = safeEval(inner);
+        steps.push(`**Step ${stepNum++}:** Evaluate brackets ${match} = ${val}`);
+        return val;
       });
     }
 
-    const num = '(-?(?:\\d+(?:\\.\\d+)?(?:e[+-]?\\d+)?|\\.\\d+))';
-
-    // Exponents
+    // Exponents **
     let regexExp = new RegExp(`${num}\\*\\*${num}`);
-    while (regexExp.test(expr)) {
-      expr = expr.replace(regexExp, (match, a, _, b) => {
-        let r = Math.pow(Number(a), Number(b));
-        steps.push(`**Step ${stepNum++}:** Exponent: ${a} ** ${b} = ${r}`);
-        return r;
-      });
-    }
-    let regexCaret = new RegExp(`${num}\\^${num}`);
-    while (regexCaret.test(expr)) {
-      expr = expr.replace(regexCaret, (match, a, _, b) => {
-        let r = Math.pow(Number(a), Number(b));
-        steps.push(`**Step ${stepNum++}:** Exponent: ${a} ^ ${b} = ${r}`);
-        return r;
-      });
+    let m;
+    while ((m = expr.match(regexExp))) {
+      let [full, a, b] = m;
+      let val = Math.pow(Number(a), Number(b));
+      steps.push(`**Step ${stepNum++}:** Exponent: ${a} ** ${b} = ${val}`);
+      expr = expr.replace(full, val);
     }
 
-    // Multiplication, Division, Modulus
+    // Exponents ^
+    let regexCaret = new RegExp(`${num}\\^${num}`);
+    while ((m = expr.match(regexCaret))) {
+      let [full, a, b] = m;
+      let val = Math.pow(Number(a), Number(b));
+      steps.push(`**Step ${stepNum++}:** Exponent: ${a} ^ ${b} = ${val}`);
+      expr = expr.replace(full, val);
+    }
+
+    // Multiplication, Division, Modulo
     let regexMulDivMod = new RegExp(`${num}([*/%])${num}`);
-    let m;
     while ((m = expr.match(regexMulDivMod))) {
       let [full, a, op, b] = m;
-      let r;
-      if (op === '*') r = Number(a) * Number(b);
-      else if (op === '/') { if (Number(b) === 0) throw new Error('Division by zero is not allowed'); r = Number(a) / Number(b); }
-      else if (op === '%') r = Number(a) % Number(b);
-      steps.push(`**Step ${stepNum++}:** ${op === '*' ? 'Multiply' : op === '/' ? 'Divide' : 'Modulo'}: ${a} ${op === '*' ? '×' : op === '/' ? '÷' : '%'} ${b} = ${r}`);
-      expr = expr.replace(regexMulDivMod, r);
+      a = Number(a); b = Number(b);
+      let val;
+      if (op === '*') val = a * b;
+      else if (op === '/') val = a / b;
+      else if (op === '%') val = a % b;
+      steps.push(`**Step ${stepNum++}:** ${op === '*' ? 'Multiply' : op === '/' ? 'Divide' : 'Modulo'}: ${a} ${op} ${b} = ${val}`);
+      expr = expr.replace(full, val);
     }
 
     // Addition, Subtraction
     let regexAddSub = new RegExp(`${num}([+-])${num}`);
     while ((m = expr.match(regexAddSub))) {
       let [full, a, op, b] = m;
-      let r = op === '+' ? Number(a) + Number(b) : Number(a) - Number(b);
-      steps.push(`**Step ${stepNum++}:** ${op === '+' ? 'Add' : 'Subtract'}: ${a} ${op} ${b} = ${r}`);
-      expr = expr.replace(regexAddSub, r);
+      a = Number(a); b = Number(b);
+      let val = op === '+' ? a + b : a - b;
+      steps.push(`**Step ${stepNum++}:** ${op === '+' ? 'Add' : 'Subtract'}: ${a} ${op} ${b} = ${val}`);
+      expr = expr.replace(full, val);
     }
 
-    steps.push(`**Final Answer:** ${result}\n\n${getFinalExplanation(result)}`);
-    return steps.length ? steps.join('\n\n') : `**Result:** ${result}`;
-
-    function safeEvalBODMASForSteps(sub) {
-      try {
-        return (function evalBODMASsub(e) {
-          e = e.replace(/\s+/g, '');
-          while (/\([^\(\)]+\)/.test(e) || /\{[^\{\}]+\}/.test(e)) {
-            e = e.replace(/\(([^\(\)]+)\)/g, (_, inner) => evalBODMASsub(inner));
-            e = e.replace(/\{([^\{\}]+)\}/g, (_, inner) => evalBODMASsub(inner));
-          }
-          let regexExp = new RegExp(`${num}\\*\\*${num}`);
-          while (regexExp.test(e)) {
-            e = e.replace(regexExp, (_, a, __, b) => Math.pow(Number(a), Number(b)));
-          }
-          let regexCaret = new RegExp(`${num}\\^${num}`);
-          while (regexCaret.test(e)) {
-            e = e.replace(regexCaret, (_, a, __, b) => Math.pow(Number(a), Number(b)));
-          }
-          let regexMulDivMod = new RegExp(`${num}([*/%])${num}`);
-          let match;
-          while ((match = e.match(regexMulDivMod))) {
-            let [all, a, op, b] = match;
-            a = Number(a); b = Number(b);
-            let v;
-            if (op === '*') v = a * b;
-            else if (op === '/') {
-              if (b === 0) throw new Error('Division by zero is not allowed');
-              v = a / b;
-            } else if (op === '%') v = a % b;
-            e = e.replace(regexMulDivMod, v);
-          }
-          let regexAddSub = new RegExp(`${num}([+-])${num}`);
-          while ((match = e.match(regexAddSub))) {
-            let [all, a, op, b] = match;
-            a = Number(a); b = Number(b);
-            let v = op === '+' ? a + b : a - b;
-            e = e.replace(regexAddSub, v);
-          }
-          e = e.replace(/^\+/, '');
-          if (e === '' || isNaN(Number(e))) throw new Error('Invalid mathematical expression');
-          return Number(e);
-        })(sub);
-      } catch {
-        return sub;
-      }
-    }
-  } catch (error) {
-    return `**Result:** ${result}`;
+    return Number(expr);
   }
+
+  let result = safeEval(expression);
+  steps.push(`**Final Answer:** ${result}`);
+  return steps.join('\n\n');
 }
+
 
 const calculateMath = (expression) => {
   try {
@@ -263,67 +267,98 @@ const calculateMath = (expression) => {
     const formulas = getCommonMathFormulas();
 
     for (let formula of formulas) {
-      if (
-        typeof expression === 'string' &&
-        (expression.toLowerCase().includes(formula.name.toLowerCase())
-        || (formula.formula && expression.replace(/\s+/g, '').includes(formula.formula.replace(/\s+/g, '')))
-        )
-      ) {
-        let params = extractFormulaParams(expression, formula.name);
-        if (typeof formula.solve === "function") {
-          let { steps, result, final } = formula.solve(params);
-          return {
-            expression: formula.name,
-            result,
-            formattedResult: result === null || typeof result === 'undefined'
-              ? null
-              : (typeof result === 'number'
-                  ? (Number.isInteger(result) ? result.toString() : result.toFixed(4))
-                  : '' + result),
-            simplifiedSteps: `**${formula.name}**\n- **Formula:** ${formula.formula}\n- **Description:** ${formula.description}\n\n` + steps.join('\n\n') + (final ? '\n\n' + final : '')
-          };
-        } else {
-          return {
-            expression: formula.name,
-            result: null,
-            formattedResult: null,
-            simplifiedSteps: `**${formula.name}**\n- **Formula:** ${formula.formula}\n- **Description:** ${formula.description}`,
-          };
-        }
-      }
+  if (typeof expression !== 'string') continue;
+
+  const exprNormalized = expression.replace(/\s+/g, '').toLowerCase();
+  const formulaNameNormalized = (formula.name || '').replace(/\s+/g, '').toLowerCase();
+  const formulaExprNormalized = (formula.formula || '').replace(/\s+/g, '').toLowerCase();
+
+  // Check if input matches formula name or formula string
+  if (exprNormalized.includes(formulaNameNormalized) || 
+      (formula.formula && exprNormalized.includes(formulaExprNormalized))
+  ) {
+    // Extract parameters safely
+    let params = [];
+    try {
+      params = extractFormulaParams(expression, formula.name) || [];
+    } catch (err) {
+      console.error("Error extracting formula params:", err);
+      params = [];
     }
+
+    // Call solve function if exists
+    if (typeof formula.solve === "function") {
+      let solveResult = {};
+      try {
+        solveResult = formula.solve(params) || {};
+      } catch (err) {
+        console.error("Error solving formula:", err);
+        solveResult = {};
+      }
+
+      const { steps = [], result = null, final = '' } = solveResult;
+
+      return {
+        expression: formula.name,
+        result,
+        formattedResult: result === null || result === undefined
+          ? null
+          : (typeof result === 'number'
+              ? (Number.isInteger(result) ? result.toString() : result.toFixed(4))
+              : String(result)),
+        simplifiedSteps: `**${formula.name}**\n- **Formula:** ${formula.formula || ''}\n- **Description:** ${formula.description || ''}\n\n` +
+          (Array.isArray(steps) ? steps.join('\n\n') : '') +
+          (final ? '\n\n' + final : '')
+      };
+    } else {
+      return {
+        expression: formula.name,
+        result: null,
+        formattedResult: null,
+        simplifiedSteps: `**${formula.name}**\n- **Formula:** ${formula.formula || ''}\n- **Description:** ${formula.description || ''}`,
+      };
+    }
+  }
+}
+
 
     // Fallback: Try to handle as math expression
     let cleanExpr = expression
-      .toLowerCase()
-      .replace(/\b(what is|calculate|compute|solve|evaluate|simplify|find|determine|work out|result of|answer for)\b[\s:,-]*/gi, '')
-      .replace(/\bplus\b/gi, '+')
-      .replace(/\badd(ed)? to\b/gi, '+')
-      .replace(/\bminus\b/gi, '-')
-      .replace(/\bsubtracted?\s+from\b/gi, '-')
-      .replace(/\b(times|multiplied by|multiply by)\b/gi, '*')
-      .replace(/\bproduct of\b/gi, '*')
-      .replace(/\bdivided by\b/gi, '/')
-      .replace(/\bdivide\b/gi, '/')
-      .replace(/\bquotient of\b/gi, '/')
-      .replace(/\bmod(ulo)?\b/gi, '%')
-      .replace(/\b(\d+(\.\d+)?)\s*percent\s*of/gi, (m, n) => `${parseFloat(n)}/100*`)
-      .replace(/\b(\d+(\.\d+)?)\s*%(\s*of)?/gi, (m, n) => `${parseFloat(n)}/100*`)
-      .replace(/\bpercent(of)?\b/gi, '/100*')
-      .replace(/\bof\b/gi, '*')
-      .replace(/÷/g, '/')
-      .replace(/×/g, '*')
-      .replace(/−|–|—/g, '-')
-      .replace(/[\[\（]/g, '(')
-      .replace(/[\]\）]/g, ')')
-      .replace(/[^0-9+\-*/().=%{}\s^,]|(?!e)[a-df-z]/gi, '')
-      .replace(/\s+/g, '')
-      .replace(/={1,}.*/, '') // remove right of '='
-      .trim();
+  .toLowerCase()
+  // remove question words
+  .replace(/\b(what is|calculate|compute|solve|evaluate|simplify|find|determine|work out|result of|answer for)\b[\s:,-]*/gi, '')
+  // basic operations
+  .replace(/\bplus\b/gi, '+')
+  .replace(/\badd(ed)? to\b/gi, '+')
+  .replace(/\bminus\b/gi, '-')
+  .replace(/\bsubtracted?\s+from\b/gi, '-')
+  .replace(/\b(times|multiplied by|multiply by|product of)\b/gi, '*')
+  .replace(/\bdivided by\b/gi, '/')
+  .replace(/\bdivide\b/gi, '/')
+  .replace(/\bquotient of\b/gi, '/')
+  .replace(/\bmod(ulo)?\b/gi, '%')
+  // percentages
+  .replace(/\b(\d+(\.\d+)?)\s*percent\s*of\b/gi, (m, n) => `(${parseFloat(n)}/100)*`)
+  .replace(/\b(\d+(\.\d+)?)\s*%(\s*of)?\b/gi, (m, n) => `(${parseFloat(n)}/100)*`)
+  .replace(/\bpercent(of)?\b/gi, '/100*')
+  // other symbols
+  .replace(/\bof\b/gi, '*')
+  .replace(/÷/gi, '/')
+  .replace(/×/gi, '*')
+  .replace(/−|–|—/gi, '-')
+  .replace(/[\[\（]/gi, '(')
+  .replace(/[\]\）]/gi, ')')
+  // remove invalid characters but keep %
+  .replace(/[^0-9+\-*/().=%{}\s^,]|(?!e)[a-df-z]/gi, '')
+  .replace(/\s+/g, '')
+  .replace(/={1,}.*/gi, '') // remove right of '='
+  .trim();
 
-    if (!/\d/.test(cleanExpr) || !/[+\-*/()]/.test(cleanExpr)) {
-      return null;
-    }
+// validate expression
+if (!/\d/.test(cleanExpr) || !/[+\-*/()%]/.test(cleanExpr)) {
+  return null;
+}
+
 
     function evalBODMAS(expr) {
       expr = expr.replace(/\s+/g, '');
@@ -490,61 +525,89 @@ const VoiceAssistant = () => {
     } catch (_) {}
   };
 
-  // Helper: get a voice, fallback to default if not found
-  const getVoice = () => {
-    const voices = window.speechSynthesis.getVoices();
-    let voice =
-      voices.find(v => v.lang === 'en-IN' && v.name && v.name.toLowerCase().includes('google')) ||
-      voices.find(v => v.lang === 'en-IN') ||
-      voices.find(v => v.lang && v.lang.startsWith('en')) ||
-      voices[0] ||
-      null;
-    return voice;
+  // Helper: Get a preferred voice, with fallbacks
+const getVoice = () => {
+  const voices = window.speechSynthesis.getVoices();
+
+  if (!voices || voices.length === 0) {
+    // Voices not loaded yet, return null
+    return null;
+  }
+
+  // Try voices in order of preference
+  const preferredVoice =
+    // 1. Google en-IN
+    voices.find(v => v.lang === 'en-IN' && v.name?.toLowerCase().includes('google')) ||
+    // 2. Any en-IN
+    voices.find(v => v.lang === 'en-IN') ||
+    // 3. Any English voice
+    voices.find(v => v.lang?.startsWith('en')) ||
+    // 4. Fallback to first available voice
+    voices[0] ||
+    null;
+
+  return preferredVoice;
+};
+
+
+  // Speak function with proper voice handling and Markdown support
+const speak = (text, isMarkdown = false) => {
+  if (!window.speechSynthesis) return;
+
+  // Cancel any ongoing speech
+  window.speechSynthesis.cancel();
+
+  // Convert Markdown to plain text if needed
+  const speakText = isMarkdown ? markdownToSpeechText(text) : text;
+  const utterance = new window.SpeechSynthesisUtterance(speakText);
+
+  // Voice properties
+  utterance.rate = 1.1;
+  utterance.pitch = 1;
+  utterance.volume = 1;
+  utterance.lang = 'en-IN';
+
+  const speakNow = () => {
+    const voice = getVoice();
+    if (voice) utterance.voice = voice;
+    window.speechSynthesis.speak(utterance);
   };
 
-  // Speak function with fallback for voices not loaded
-  const speak = (text, isMarkdown = false) => {
-    if (!window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
-
-    let speakText = text;
-    if (isMarkdown) {
-      speakText = markdownToSpeechText(text);
-    }
-
-    const utterance = new window.SpeechSynthesisUtterance(speakText);
-    utterance.rate = 1.1;
-    utterance.pitch = 1;
-    utterance.volume = 1;
-    utterance.lang = 'en-IN';
-
-    const setAndSpeak = () => {
-      utterance.voice = getVoice();
-      utterance.onend = () => {};
-      window.speechSynthesis.speak(utterance);
+  // Voices may not be loaded yet
+  const voices = window.speechSynthesis.getVoices();
+  if (voices.length === 0) {
+    // Wait for voices to load
+    const onVoicesChanged = () => {
+      speakNow();
+      window.speechSynthesis.removeEventListener('voiceschanged', onVoicesChanged);
     };
+    window.speechSynthesis.addEventListener('voiceschanged', onVoicesChanged);
+  } else {
+    speakNow();
+  }
+};
 
-    if (window.speechSynthesis.getVoices().length === 0) {
-      window.speechSynthesis.onvoiceschanged = null;
-      window.speechSynthesis.onvoiceschanged = setAndSpeak;
-    } else {
-      setAndSpeak();
-    }
-  };
 
-  // Greet on load, but only once
-  const wishMe = () => {
-    if (hasWishedRef.current) return;
-    hasWishedRef.current = true;
-    const hour = new Date().getHours();
-    if (hour < 12) {
-      speak('Good morning. How can I help you?');
-    } else if (hour < 16) {
-      speak('Good afternoon. How can I help you?');
-    } else {
-      speak('Good evening. How can I help you?');
-    }
-  };
+  // Greet the user on load, but only once
+const wishMe = () => {
+  if (hasWishedRef.current) return; // Already greeted
+  hasWishedRef.current = true;
+
+  const hour = new Date().getHours();
+  let greeting = 'Hello. How can I help you?';
+
+  if (hour < 12) {
+    greeting = 'Good morning. How can I help you?';
+  } else if (hour < 16) {
+    greeting = 'Good afternoon. How can I help you?';
+  } else {
+    greeting = 'Good evening. How can I help you?';
+  }
+
+  // Speak the greeting
+  speak(greeting);
+};
+
 
   // Main command handler
   const takeCommand = async (msg, { fromInput = false } = {}) => {
@@ -646,7 +709,7 @@ const VoiceAssistant = () => {
       setShowNewCodeForm(false);
       setShowCategory(false);
       setShowCategoryButton(false);
-      setChatHistory(prev => [...prev, { type: 'bot', text: 'Opening all data in this chat' }])
+      setChatHistory(prev => [...prev, { type: 'bot', text: 'Opening all data in the popup.' }])
       setThinking(false);
       return;
     } 
@@ -747,36 +810,42 @@ const VoiceAssistant = () => {
     // Filter data based on selected categories
     let filteredData = latestData;
     if (!selectedCategories.includes('all')) {
-      filteredData = latestData.filter(item => {
-        return selectedCategories.some(category => {
-          if (category === 'markdown') {
-            return item.answer && (item.answer.includes('```') || item.answer.includes('#'));
-          } else if (category === 'general') {
-            return item.category === 'general' || !item.category;
-          } else {
-            return item.category === category;
-          }
-        });
-      });
-    }
-
-    // Check for math questions in API data first (before exact match)
-    let mathMatchedItem = null;
-    for (const item of filteredData) {
-      if (item.question && item.category === 'math') {
-        const q = item.question.trim().toLowerCase();
-        const userMsg = msg.trim().toLowerCase();
-        
-        // Check if the math question matches (allowing for some flexibility)
-        if (q === userMsg || 
-            q.includes(userMsg) || 
-            userMsg.includes(q) ||
-            q.replace(/[^0-9+\-*/()]/g, '') === userMsg.replace(/[^0-9+\-*/()]/g, '')) {
-          mathMatchedItem = item;
-          break;
-        }
+  filteredData = latestData.filter(item => {
+    // Check if any selected category matches the item
+    return selectedCategories.some(category => {
+      switch (category) {
+        case 'markdown':
+          return item.answer && (item.answer.includes('```') || item.answer.includes('#'));
+        case 'general':
+          return item.category === 'general' || !item.category;
+        default:
+          return item.category === category;
       }
-    }
+    });
+  });
+}
+
+
+   // --- Check for math questions in filteredData ---
+let mathMatchedItem = filteredData.find(item => {
+  if (!item.question || item.category !== 'math') return false;
+
+  const q = item.question.trim().toLowerCase();
+  const userMsg = msg.trim().toLowerCase();
+
+  // Remove non-math characters for flexible comparison
+  const cleanQ = q.replace(/[^0-9+\-*/().]/g, '');
+  const cleanUser = userMsg.replace(/[^0-9+\-*/().]/g, '');
+
+  // Match if exact, partial, or cleaned math strings match
+  return (
+    q === userMsg ||
+    q.includes(userMsg) ||
+    userMsg.includes(q) ||
+    cleanQ === cleanUser
+  );
+});
+
 
     // If math question found in API, use that instead of calculation
     if (mathMatchedItem) {
@@ -841,19 +910,59 @@ const VoiceAssistant = () => {
       return;
     }
 
-    // Built-in commands
-    if (lowerMsg.includes('play music')) {
-      if (!fromInput) speak('Playing music...');
-      window.open('https://www.youtube.com/watch?v=2Vv-BfVoq4g', '_blank');
-      setChatHistory(prev => [
-        ...prev,
-        { type: 'bot', text: 'Playing music...' }
-      ]);
-      setGoogleSearchQuery('');
-      setShowGoogleButton(false);
-      setThinking(false);
-      return;
-    }
+if (lowerMsg.includes('play music')) {
+  if (!fromInput) speak('Playing music...');
+
+  // Stop any previous music
+  if (window.currentAudio) {
+    window.currentAudio.pause();
+    window.currentAudio.currentTime = 0;
+  }
+
+  // Play new music
+  const audio = new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3');
+  window.currentAudio = audio;
+  audio.play().catch(err => {
+    console.error('Audio playback failed:', err);
+    if (!fromInput) speak('Sorry, I could not play the music.');
+  });
+
+  setChatHistory(prev => [
+    ...prev,
+    { type: 'bot', text: 'Playing music...' }
+  ]);
+
+  setGoogleSearchQuery('');
+  setShowGoogleButton(false);
+  setThinking(false);
+  return;
+}
+
+
+// --- Built-in command: Stop music ---
+if (lowerMsg.includes('stop music')) {
+  if (!fromInput) speak('Stopping music...');
+
+  // Stop the currently playing audio
+  if (window.currentAudio) {
+    window.currentAudio.pause();
+    window.currentAudio.currentTime = 0;
+    window.currentAudio = null;
+  }
+
+  // Update chat
+  setChatHistory(prev => [
+    ...prev,
+    { type: 'bot', text: 'Music stopped.' }
+  ]);
+
+  setGoogleSearchQuery('');
+  setShowGoogleButton(false);
+  setThinking(false);
+  return;
+}
+
+
     if (lowerMsg.includes('time')) {
       const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       if (!fromInput) speak(`The time is ${time}`);
@@ -891,36 +1000,52 @@ const VoiceAssistant = () => {
     return;
   };
 
-  // Start listening
-  const handleStartListening = async () => {
-    setError('');
-    if (!recognitionRef.current) {
-      setError('Speech recognition is not available.');
-      return;
-    }
-    setListening(true);
-    try {
-      recognitionRef.current.start();
-    } catch (err) {
-      setListening(false);
-      setError('Could not start voice recognition.');
-    }
+  // --- Start voice recognition ---
+const handleStartListening = () => {
+  setError(''); // Clear previous errors
 
-    // Prefetch data silently in background
-    if (!dataLoadedRef.current && !prefetchingRef.current) {
-      prefetchingRef.current = true;
-      axios
-        .get('https://server-01-v2cx.onrender.com/getassistant')
-        .then(res => {
-          setData(Array.isArray(res.data) ? res.data : []);
-          dataLoadedRef.current = true;
-        })
-        .catch(() => {})
-        .finally(() => {
-          prefetchingRef.current = false;
-        });
+  const recognition = recognitionRef.current;
+  if (!recognition) {
+    setError('Speech recognition is not available.');
+    return;
+  }
+
+  // Prevent starting if already listening
+  if (listening) {
+    setError('Already listening...');
+    return;
+  }
+
+  setListening(true);
+
+  try {
+    recognition.start();
+  } catch (err) {
+    console.error('Voice recognition start failed:', err);
+    setListening(false);
+    setError('Could not start voice recognition. Please try again.');
+  }
+
+  // --- Prefetch assistant data in background ---
+  const prefetchAssistantData = async () => {
+    if (dataLoadedRef.current || prefetchingRef.current) return;
+
+    prefetchingRef.current = true;
+    try {
+      const res = await axios.get('https://server-01-v2cx.onrender.com/getassistant');
+      const assistantData = Array.isArray(res.data) ? res.data : [];
+      setData(assistantData);
+      dataLoadedRef.current = true;
+    } catch (err) {
+      console.error('Failed to prefetch assistant data:', err);
+    } finally {
+      prefetchingRef.current = false;
     }
   };
+
+  prefetchAssistantData();
+};
+
 
   // Handle text input submit
   const handleInputSubmit = (e) => {
