@@ -6,7 +6,7 @@ function Assistant() {
     open: false,
     link: '',
     image: '',
-    file: '',
+    file: '', 
     category: 'general'
   });
   const [status, setStatus] = useState(null);

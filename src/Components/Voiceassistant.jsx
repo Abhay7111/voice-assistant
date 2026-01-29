@@ -2053,7 +2053,7 @@ const handleStartListening = () => {
             onChange={handleInputChange}
             onKeyDown={handleInputKeyDown}
             placeholder={`Ask me ${selectedCategories.length === 1 ? 'anything' : 'on this'} ${!selectedCategories.includes('all') ? ` (${selectedCategories.join(', ')})` : ''} ${selectedCategories.length === 1 ? '' : 'topics'}... (or type /code, /newcode, /math, /newmath)`}
-            className={`md:max-w-[550px] px-6 h-12 ${isDarkTheme? 'bg-zinc-100' : 'bg-zinc-300'} border border-zinc-600 dark:border-zinc-400 rounded-lg focus:outline-none focus:ring-1 focus:ring-zinc-500/20 dark:focus:ring-zinc-400/20 focus:border-zinc-100 transition-all duration-300 ${isDarkTheme ? 'text-zinc-700' : 'text-zinc-600'} placeholder-zinc-400 dark:placeholder-zinc-500 text-base shadow-md focus:shadow-zinc-400`}
+            className={`md:max-w-[550px] w-[65vw] md:w-80 lg:w-96 px-6 h-12 ${isDarkTheme? 'bg-zinc-100' : 'bg-zinc-300'} border border-zinc-600 dark:border-zinc-400 rounded-lg focus:outline-none focus:ring-1 focus:ring-zinc-500/20 dark:focus:ring-zinc-400/20 focus:border-zinc-100 transition-all duration-300 ${isDarkTheme ? 'text-zinc-700' : 'text-zinc-600'} placeholder-zinc-400 dark:placeholder-zinc-500 text-base shadow-md focus:shadow-zinc-400`}
             autoComplete="off"
           />
           
