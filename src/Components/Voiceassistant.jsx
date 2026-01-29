@@ -1643,7 +1643,7 @@ const handleStartListening = () => {
                 <div className="va-error px-5 py-1 rounded-md">{error}</div>
               )}
               <h1 className='text-2xl font-semibold'>Wellcome {`Abhay7111`}</h1>
-              <p className=" max-w-[35%] va-modal-text rounded-md text-center flex flex-col items-center justify-center p-2">
+              <p className=" xl:max-w-[35%] max-w-[90%] va-modal-text rounded-md text-center flex flex-col items-center justify-center p-2">
               {!Datacount <= 8 
                 ? "Abhay7111, I don't have enough knowledge right now to assist you properly. I'm still learning and gathering information. Please be patient with me as I improve." 
                 : "Abhay7111, I have a lot of data available. I'm ready to assist you with accurate and helpful information to the best of my ability."}
@@ -2053,7 +2053,7 @@ const handleStartListening = () => {
             onChange={handleInputChange}
             onKeyDown={handleInputKeyDown}
             placeholder={`Ask me ${selectedCategories.length === 1 ? 'anything' : 'on this'} ${!selectedCategories.includes('all') ? ` (${selectedCategories.join(', ')})` : ''} ${selectedCategories.length === 1 ? '' : 'topics'}... (or type /code, /newcode, /math, /newmath)`}
-            className={`w-[550px] px-6 h-12 ${isDarkTheme? 'bg-zinc-100' : 'bg-zinc-300'} border border-zinc-600 dark:border-zinc-400 rounded-lg focus:outline-none focus:ring-1 focus:ring-zinc-500/20 dark:focus:ring-zinc-400/20 focus:border-zinc-100 transition-all duration-300 ${isDarkTheme ? 'text-zinc-300' : 'text-zinc-600'} placeholder-zinc-400 dark:placeholder-zinc-500 text-base shadow-md focus:shadow-zinc-400`}
+            className={`md:max-w-[550px] px-6 h-12 ${isDarkTheme? 'bg-zinc-100' : 'bg-zinc-300'} border border-zinc-600 dark:border-zinc-400 rounded-lg focus:outline-none focus:ring-1 focus:ring-zinc-500/20 dark:focus:ring-zinc-400/20 focus:border-zinc-100 transition-all duration-300 ${isDarkTheme ? 'text-zinc-700' : 'text-zinc-600'} placeholder-zinc-400 dark:placeholder-zinc-500 text-base shadow-md focus:shadow-zinc-400`}
             autoComplete="off"
           />
           
