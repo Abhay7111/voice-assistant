@@ -504,6 +504,7 @@ const VoiceAssistant = () => {
   const Questions = data.map((items)=>(<>{items.question}, </>));
   const [copiedIndex, setCopiedIndex] = useState(null);
   const prefetchingRef = useRef(false);
+  const inputRef = useRef(null);
 
   const [allData, setallData] = useState(false);
   const [isDarkTheme, setIsDarkTheme] = useState(true);
@@ -1314,14 +1315,15 @@ const handleStartListening = () => {
         });
       }
 
-      // Find questions that start with the input (case-insensitive) from filtered data
-      const inputLower = val.trim().toLowerCase();
-      const filtered = filteredData
-        .filter(item => item.question && item.question.toLowerCase().startsWith(inputLower))
-        .map(item => item.question);
+      // Find questions that include the input (case-insensitive) from filtered data
+      const suggestions = filteredData
+        .map(item => item.question)
+        .filter(q =>
+          q && q.toLowerCase().includes(val.toLowerCase().trim())
+        );
 
-      setSuggestions(filtered.slice(0, 8)); // limit to 8 suggestions
-      setShowSuggestions(filtered.length > 0);
+      setSuggestions(suggestions.slice(0, 8)); // limit to 8 suggestions
+      setShowSuggestions(suggestions.length > 0);
       setActiveSuggestion(-1);
     } else {
       setSuggestions([]);
@@ -1587,6 +1589,19 @@ const handleStartListening = () => {
       setActiveSuggestion(-1);
     }
   }, [message]);
+
+  // Ctrl+Space: focus the input from anywhere
+  useEffect(() => {
+    const handleGlobalKeyDown = (e) => {
+      if (e.ctrlKey && e.code === 'Space') {
+        e.preventDefault();
+        inputRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
+
   // Scroll to bottom on new chat
   useEffect(() => {
     if (chatEndRef.current) {
@@ -1642,12 +1657,16 @@ const handleStartListening = () => {
               {error && (
                 <div className="va-error px-5 py-1 rounded-md">{error}</div>
               )}
-              <h1 className='text-2xl font-semibold'>Wellcome {`Abhay7111`}</h1>
-              <p className=" xl:max-w-[35%] max-w-[90%] va-modal-text rounded-md text-center flex flex-col items-center justify-center p-2">
-              {!Datacount <= 8 
-                ? "Abhay7111, I don't have enough knowledge right now to assist you properly. I'm still learning and gathering information. Please be patient with me as I improve." 
-                : "Abhay7111, I have a lot of data available. I'm ready to assist you with accurate and helpful information to the best of my ability."}
+              <h1 className='text-3xl font-bold mb-2 bg-gradient-to-r from-cyan-500 to-blue-600 bg-clip-text text-transparent'>Welcome, Abhay7111! 👋</h1>
+              <p className="xl:max-w-[40%] max-w-[90%] va-modal-text rounded-md text-center flex flex-col items-center justify-center p-3 text-base leading-relaxed">
+              {Datacount <= 8 
+                ? "I'm still learning and gathering knowledge to better assist you. Feel free to ask me anything, and I'll do my best to help! You can also contribute by adding new questions and answers using the /newcode or /newmath commands." 
+                : `Great! I have access to ${Datacount} pieces of knowledge and I'm ready to help you. Ask me anything, use voice commands, or explore specific categories. I'm here to assist you with accurate and helpful information!`}
               </p>
+              <div className="mt-2 text-sm text-zinc-500 dark:text-zinc-400 flex flex-col items-center gap-1">
+                <p className="hidden md:block">💡 <strong>Tip:</strong> Press <kbd className="px-2 py-1 bg-zinc-400 dark:bg-zinc-200 rounded text-xs">Ctrl + Space</kbd> to quickly focus the input</p>
+                <p>🎤 Use the microphone button for voice commands</p>
+              </div>
             </div>
           </div>
         )}
@@ -1663,21 +1682,23 @@ const handleStartListening = () => {
               className={`max-w-[85%] px-3 py-0.5 rounded-lg break-words text-sm ${
                 chat.type === 'user'
                   ? 'bg-transparent va-chat-user min-h-10 flex items-center justify-center text-nowrap'
+                  // Remove border for bot reply: no border-related classes here
                   : 'bg-transparent va-chat-bot text-wrap py-1 break-words overflow-hidden'
               }`}
+              style={chat.type !== 'user' ? { border: "none" } : {}}
             >
               <div className="relative mb-1 ">
                 {chat.text && (
                   <div className="flex flex-col items-start justify-start gap-2">
-                    <div className="markdown">
+                    <div className="markdown w-full">
                       {chat.type === 'user' ? (
                         <div className='va-chat-user w-96 text-end text-wrap'>{chat.text} </div>
                       ) : (
                         <div className="text-sm text-wrap">
-                          <div className='text-blue-500' >
+                          <div className='text-blue-500 w-full' >
                             <TypewriterMarkdown
                               text={chat.text}
-                              speed={80}
+                              speed={75}
                               delay={index * 100}
                             />
 
@@ -1690,35 +1711,12 @@ const handleStartListening = () => {
                 )}
               </div>
 
-              {chat.link && (
-                <a
-                  href={chat.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="va-link underline text-sm block text-wrap"
-                >
-                  🔗 Open Link
-                </a>
-              )}
-
               {chat.image && (
                 <img
                   src={chat.image}
                   alt="chat-img"
-                  className="mt-2 rounded-md max-w-[200px]"
+                  className="mt-2 rounded-md max-w-[80vw] md:max-w-[60vw] lg:max-w-[40vw]"
                 />
-              )}
-
-              {chat.file && (
-                <a
-                  href={chat.file}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  download
-                  className="va-warning underline text-sm block mt-1"
-                >
-                  📎 Download File
-                </a>
               )}
 
               {/* Copy to clipboard button for assistant messages */}
@@ -1769,6 +1767,41 @@ const handleStartListening = () => {
                     </div>
                   </span>
 
+                  {/* file download button */}
+
+                  {chat.file ? (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          const response = await fetch(chat.file, { mode: 'cors' });
+                          if (!response.ok) throw new Error('Network response was not ok');
+                          const blob = await response.blob();
+                          const url = window.URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          // Use the file name from the chat.file path
+                          const fileName = chat.file.split('/').pop();
+                          const nowDate = new Date();
+                          const dateString = nowDate.toISOString().replace(/:/g, '-').replace(/\..+/, '');
+                          const nameNoQuery = fileName && fileName.split('?')[0];
+                          a.download = `${dateString.split(/[-\/_,]/)}${(nameNoQuery && nameNoQuery.split(/[-\/_,]/)) || 'file'}`;
+                          document.body.appendChild(a);
+                          a.click();
+                          window.URL.revokeObjectURL(url);
+                          a.remove();
+                        } catch (err) {
+                          console.error('Failed to download file:', err);
+                          window.open(chat.file, '_blank', 'noopener,noreferrer');
+                        }
+                      }}
+                      className="text-zinc-500 font-bold focus:text-blue-500 text-lg mt-1 cursor-pointer"
+                      title={chat.file}
+                    >
+                      <span role="img" aria-label="Download File"> <i className='ri-arrow-down-line'></i></span>
+                    </button>
+                  ) : null}
+
                   {/* Open in Google button when data not found */}
 
                   {chat.googleQuery && (
@@ -1795,14 +1828,25 @@ const handleStartListening = () => {
                       Submit Math Problem
                     </button>
                   )}
-                  
-                  {/* Category show */}
 
-                  {/* {chat.category && (
-                    <span className="text-xs text-zinc-400 px-2 py-1 rounded">
-                      {chat.category}
+                  {/* Open Link button */}
+                  
+                  {chat.link && (
+                  <a
+                    href={chat.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-zinc-500 font-bold focus:text-blue-500 text-lg mt-1 cursor-pointer rounded-md hover:text-blue-700 transition-colors duration-200 flex items-center gap-1"
+                    style={{ textDecoration: 'none' }}
+                    title={chat.link}
+                  >
+                    <span role="img" aria-label="Open Link">
+                      <i className="ri-search-eye-line"></i>
                     </span>
-                  )} */}
+                    <span className="text-xs font-medium">Open Link</span>
+                  </a>
+                )}
+                  
                 </div>
               )}
             </div>
@@ -2048,6 +2092,7 @@ const handleStartListening = () => {
       <form onSubmit={handleInputSubmit} className="flex items-center justify-center gap-2 w-full relative">
         <div className="relative "> 
           <input
+            ref={inputRef}
             type="text"
             value={message}
             onChange={handleInputChange}
@@ -2060,31 +2105,60 @@ const handleStartListening = () => {
           {/* Show selected categories indicator ** Autocomplete Suggestions ** */}
 
           {showSuggestions && suggestions.length > 0 && (
-            <div className="va-suggestions absolute z-50 bottom-full left-0 right-0 mb-3 rounded-xl shadow-2xl h-fit max-h-96 overflow-y-auto backdrop-blur">
-              {suggestions.slice(0, 5).map((suggestion, idx) => {
-                // Find the original data item to get category info
-                const originalItem = data.find(item => item.question === suggestion);
-                const category = originalItem?.category || 'general';
-                
-                return (
-                  <div className='w-full'>
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => handleSuggestionClick(suggestion)}
-                      className={`w-full px-6 py-0 text-left va-suggestion-item transition-colors ${
-                        idx === activeSuggestion ? 'active' : ''
-                      }`}
-                    >
-                      <div className="flex items-center justify-between py-2 cursor-pointer">
-                        <span title={category || 'general'} className="text-base">{suggestion}</span>
-                      </div>
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+  <div className="va-suggestions absolute z-50 bottom-full left-0 right-0 mb-3 rounded-xl shadow-2xl max-h-96 overflow-y-auto backdrop-blur">
+    {suggestions.slice(0, 5).map((suggestion, idx) => {
+      const originalItem = data.find(
+        item => item.question === suggestion
+      );
+      const category = originalItem?.category || 'general';
+
+      const highlightText = (text, query) => {
+        if (!query) return text;
+
+        const lowerText = text.toLowerCase();
+        const lowerQuery = query.toLowerCase();
+
+        const startIndex = lowerText.indexOf(lowerQuery);
+        if (startIndex === -1) return text;
+
+        const endIndex = startIndex + query.length;
+
+        return (
+          <>
+            {text.slice(0, startIndex)}
+            <mark className="bg-yellow-200 px-1 rounded">
+              {text.slice(startIndex, endIndex)}
+            </mark>
+            {text.slice(endIndex)}
+          </>
+        );
+      };
+
+      return (
+        <button
+          key={idx}
+          type="button"
+          onClick={() => handleSuggestionClick(suggestion)}
+          className={`w-full px-6 py-2 text-left transition-colors ${
+            idx === activeSuggestion ? 'bg-zinc-200' : 'hover:bg-zinc-100'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-base">
+              {highlightText(suggestion, message)}
+            </span>
+
+            <span className="text-xs text-zinc-400 ml-3">
+              {category}
+            </span>
+          </div>
+        </button>
+      );
+    })}
+  </div>
+)}
+
+
         </div>
 
           {/* Send Button */}
@@ -2116,6 +2190,11 @@ const handleStartListening = () => {
           )}
         </button>
       </form>
+
+      {/* Disclaimer Message */}
+      <p className="text-xs text-zinc-500 dark:text-zinc-400 text-center mt-2 px-4">
+        ⚠️ This assistant may be wrong. Please verify important information.
+      </p>
       
       {/* Categories with Related Content ** Categories popup ** */}
 

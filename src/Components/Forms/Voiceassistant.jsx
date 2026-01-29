@@ -1,4 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
+import ReactMarkdown from 'react-markdown';
+
+// Use react-markdown for rendering user-entered markdown
+function MarkdownView({ markdown }) {
+  // Optional: strip script tags if you expect malicious input (react-markdown escapes by default)
+  function sanitize(text) {
+    return text.replace(/<script.*?>.*?<\/script>/gi, '');
+  }
+  return (
+    <div className=" markdown prose prose-invert max-w-full py-2 px-2 bg-zinc-900 rounded-xl border border-zinc-700 shadow-md text-base leading-relaxed">
+      <ReactMarkdown >{sanitize(markdown)}</ReactMarkdown>
+    </div>
+  );
+}
+
 function Assistant() {
   const [formData, setFormData] = useState({
     question: '',
@@ -14,6 +29,9 @@ function Assistant() {
   const [loadingCategories, setLoadingCategories] = useState(false);
   const [newCategory, setNewCategory] = useState('');
   const skipCategoryReload = useRef(false);
+
+  // Markdown preview popup state
+  const [showMarkdown, setShowMarkdown] = useState(false);
 
   useEffect(() => {
     if (skipCategoryReload.current) {
@@ -63,7 +81,6 @@ function Assistant() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setStatus('loading');
-
     let submitData = { ...formData };
 
     try {
@@ -95,7 +112,6 @@ function Assistant() {
 
   const handleSelectCategory = (e) => {
     if (e.target.value === '__add_new__') {
-      // Prompt for new category, then add and select it
       setTimeout(() => {
         const input = document.getElementById('new-category-input');
         if (input) input.focus();
@@ -151,28 +167,46 @@ function Assistant() {
     }
   };
 
+  // B&W Styling
+  const bwInput =
+    'w-full border border-zinc-700 bg-zinc-900 text-neutral-100 px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-neutral-500 transition placeholder:text-neutral-400 shadow-inner';
+
+  const bwInputSm =
+    'w-full border border-zinc-500 bg-zinc-900 text-neutral-100 px-3 py-1.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-400 placeholder:text-neutral-400 shadow-inner';
+
+  const bwBtn =
+    'px-3 py-1.5 rounded-lg bg-neutral-800 text-white font-bold hover:bg-neutral-600 transition';
+
+  const bwBtnCancel =
+    'px-2 py-1 rounded-lg bg-zinc-700/80 text-zinc-200 hover:bg-zinc-600 transition';
+
+  const bwBtnAdd =
+    'ml-1 px-2 py-1 rounded-lg bg-zinc-600 text-neutral-100 text-xs font-semibold hover:bg-zinc-700 transition flex items-center gap-1';
+
+  const bwFormBg =
+    'w-full max-w-[700px] p-3 mx-auto bg-zinc-900 rounded-xl shadow-2xl mt-0 border border-zinc-800/60 relative overflow-hidden';
+
+  const bwTitle =
+    'text-3xl font-black mb-8 text-center text-zinc-100 tracking-tight drop-shadow-lg';
+
+  // Center the form absolutely in viewport using flex
   return (
-    <div className='w-full h-full overflow-auto'>
-      <div className="w-full max-w-[700px] p-3 mx-auto bg-gradient-to-br from-blue-950 via-zinc-900 to-zinc-800 rounded-xl shadow-2xl mt-0 border border-blue-900/40 relative overflow-hidden">
-        {/* Decorative background */}
-        <div className="absolute inset-0 pointer-events-none z-0">
-          <div className="absolute -top-20 -left-20 w-72 h-72 bg-blue-700/20 rounded-full blur-3xl animate-pulse" />
-          <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-cyan-500/10 rounded-full blur-2xl animate-pulse" />
-        </div>
-        <div className="relative z-10">
-          <h2 className="text-3xl font-black mb-8 text-center text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-600 tracking-tight drop-shadow-lg">
-            <i className="ri-robot-3-line mr-2 text-4xl align-middle font-light" />
+    <div className="w-full h-full min-h-screen bg-zinc-950 flex items-center justify-center">
+      <div className={bwFormBg + " flex flex-col items-center justify-center"}>
+        <div className="relative z-10 w-full max-w-3xl flex flex-col items-center">
+          <h2 className={bwTitle}>
+            <i className="ri-robot-3-line mr-2 text-4xl align-middle font-light text-neutral-400" />
             Assistant Data Entry
           </h2>
-          <form onSubmit={handleSubmit} className="space-y-7">
+          <form onSubmit={handleSubmit} className="space-y-7 w-full max-w-xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block mb-2 font-semibold text-zinc-200 tracking-wide" htmlFor="question">
-                  <i className="ri-question-line mr-1 text-blue-400" />
+                <label className="block mb-2 font-semibold text-neutral-200 tracking-wide" htmlFor="question">
+                  <i className="ri-question-line mr-1 text-neutral-400" />
                   Question<span className="text-red-500">*</span>
                 </label>
                 <input
-                  className="w-full border border-blue-800 bg-zinc-900/80 lowercase text-zinc-100 px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition placeholder:text-zinc-400 shadow-inner"
+                  className={bwInput + " lowercase"}
                   type="text"
                   id="question"
                   name="question"
@@ -184,18 +218,18 @@ function Assistant() {
                 />
               </div>
               <div>
-                <label className="block mb-2 font-semibold text-zinc-200 tracking-wide" htmlFor="category">
-                  <i className="ri-price-tag-3-line mr-1 text-cyan-400" />
+                <label className="block mb-2 font-semibold text-neutral-200 tracking-wide" htmlFor="category">
+                  <i className="ri-price-tag-3-line mr-1 text-neutral-400" />
                   Category
                 </label>
                 {loadingCategories ? (
-                  <div className="text-zinc-400 text-sm py-2">Loading categories...</div>
+                  <div className="text-neutral-400 text-sm py-2">Loading categories...</div>
                 ) : (
                   <div>
                     <div className="flex gap-2 items-center">
                       {formData.category !== '__add_new__' ? (
                         <select
-                          className="w-full border border-blue-800 bg-zinc-900/80 text-zinc-100 px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 transition placeholder:text-zinc-400 shadow-inner"
+                          className={bwInput}
                           id="category"
                           name="category"
                           value={formData.category}
@@ -211,7 +245,7 @@ function Assistant() {
                         <input
                           id="new-category-input"
                           type="text"
-                          className="w-full border border-cyan-600 bg-zinc-900/80 text-zinc-100 px-3 py-1.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400 placeholder:text-zinc-400 shadow-inner"
+                          className={bwInputSm}
                           placeholder="Enter new category"
                           value={newCategory}
                           onChange={handleNewCategoryInput}
@@ -224,7 +258,7 @@ function Assistant() {
                         <>
                           <button
                             type="button"
-                            className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold hover:from-cyan-600 hover:to-blue-600 transition"
+                            className={bwBtn}
                             onClick={handleAddNewCategory}
                             disabled={!newCategory.trim()}
                           >
@@ -232,7 +266,7 @@ function Assistant() {
                           </button>
                           <button
                             type="button"
-                            className="px-2 py-1 rounded-lg bg-zinc-700/70 text-zinc-200 hover:bg-zinc-600 transition"
+                            className={bwBtnCancel}
                             onClick={() => {
                               setFormData(prev => ({
                                 ...prev,
@@ -248,7 +282,7 @@ function Assistant() {
                       ) : (
                         <button
                           type="button"
-                          className="ml-1 px-2 py-1 rounded-lg bg-cyan-700/80 text-white text-xs font-semibold hover:bg-cyan-600 transition flex items-center gap-1"
+                          className={bwBtnAdd}
                           onClick={() => {
                             setFormData(prev => ({
                               ...prev,
@@ -272,13 +306,13 @@ function Assistant() {
                 )}
               </div>
             </div>
-            <div>
-              <label className="block mb-2 font-semibold text-zinc-200 tracking-wide" htmlFor="answer">
-                <i className="ri-chat-1-line mr-1 text-blue-400" />
+            <div className="relative">
+              <label className="block mb-2 font-semibold text-neutral-200 tracking-wide" htmlFor="answer">
+                <i className="ri-chat-1-line mr-1 text-neutral-400" />
                 Answer<span className="text-red-500">*</span>
               </label>
               <textarea
-                className="w-full border border-blue-800 bg-zinc-900/80 text-zinc-100 px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition min-h-[150px] max-h-[500px] resize-y placeholder:text-zinc-400 shadow-inner"
+                className={bwInput + " min-h-[150px] max-h-[500px] resize-y"}
                 id="answer"
                 name="answer"
                 value={formData.answer}
@@ -286,15 +320,27 @@ function Assistant() {
                 required
                 placeholder="Type the answer here"
               />
+              {/* Button to show markdown preview */}
+              <button
+                type="button"
+                className="absolute top-2 right-2 px-2 py-1 text-xs bg-zinc-700 text-white rounded hover:bg-zinc-600 transition z-20 flex items-center gap-1 shadow"
+                style={{ marginTop: -8, marginRight: -5 }}
+                onClick={() => setShowMarkdown(true)}
+                tabIndex={0}
+                aria-label="View Markdown Preview"
+              >
+                <i className="ri-eye-line text-sm" />
+                Markdown View
+              </button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block mb-2 font-semibold text-zinc-200 tracking-wide" htmlFor="link">
-                  <i className="ri-link mr-1 text-cyan-400" />
+                <label className="block mb-2 font-semibold text-neutral-200 tracking-wide" htmlFor="link">
+                  <i className="ri-link mr-1 text-neutral-400" />
                   Link
                 </label>
                 <input
-                  className="w-full border border-blue-800 bg-zinc-900/80 text-zinc-100 px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 transition placeholder:text-zinc-400 shadow-inner"
+                  className={bwInput}
                   type="text"
                   id="link"
                   name="link"
@@ -307,15 +353,15 @@ function Assistant() {
               {formData.link && formData.link.trim() !== '' ? (
                 <div className="flex items-center space-x-3 mt-7 md:mt-0">
                   <input
-                    className="accent-blue-600 w-5 h-5 rounded focus:ring-2 focus:ring-blue-400"
+                    className="accent-black w-5 h-5 rounded focus:ring-2 focus:ring-neutral-500"
                     type="checkbox"
                     id="open"
                     name="open"
                     checked={formData.open}
                     onChange={handleChange}
                   />
-                  <label htmlFor="open" className="font-medium text-zinc-200 select-none">
-                    <i className="ri-external-link-line mr-1 text-blue-400" />
+                  <label htmlFor="open" className="font-medium text-neutral-200 select-none">
+                    <i className="ri-external-link-line mr-1 text-neutral-400" />
                     Open Link in New Tab
                   </label>
                 </div>
@@ -325,12 +371,12 @@ function Assistant() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block mb-2 font-semibold text-zinc-200 tracking-wide" htmlFor="image">
-                  <i className="ri-image-line mr-1 text-cyan-400" />
+                <label className="block mb-2 font-semibold text-neutral-200 tracking-wide" htmlFor="image">
+                  <i className="ri-image-line mr-1 text-neutral-400" />
                   Image URL
                 </label>
                 <input
-                  className="w-full border border-blue-800 bg-zinc-900/80 text-zinc-100 px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 transition placeholder:text-zinc-400 shadow-inner"
+                  className={bwInput}
                   type="text"
                   id="image"
                   name="image"
@@ -344,20 +390,21 @@ function Assistant() {
                     <img
                       src={formData.image}
                       alt="Preview"
-                      className="size-15 object-cover rounded-lg border border-blue-800 shadow"
+                      className="size-15 object-cover rounded-lg border border-zinc-600 shadow"
                       onError={e => { e.target.onerror = null; e.target.style.display = 'none'; }}
+                      style={{ filter: 'grayscale(100%)' }}
                     />
-                    <span className="text-xs text-zinc-400">Preview</span>
+                    <span className="text-xs text-neutral-400">Preview</span>
                   </div>
                 )}
               </div>
               <div>
-                <label className="block mb-2 font-semibold text-zinc-200 tracking-wide" htmlFor="file">
-                  <i className="ri-attachment-2 mr-1 text-cyan-400" />
+                <label className="block mb-2 font-semibold text-neutral-200 tracking-wide" htmlFor="file">
+                  <i className="ri-attachment-2 mr-1 text-neutral-400" />
                   File URL
                 </label>
                 <input
-                  className="w-full border border-blue-800 bg-zinc-900/80 text-zinc-100 px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 transition placeholder:text-zinc-400 shadow-inner"
+                  className={bwInput}
                   type="text"
                   id="file"
                   name="file"
@@ -372,7 +419,7 @@ function Assistant() {
                       href={formData.file}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-cyan-300 underline text-xs hover:text-cyan-200 transition"
+                      className="inline-flex items-center gap-1 text-neutral-200 underline text-xs hover:text-neutral-400 transition"
                     >
                       <i className="ri-download-2-line" /> Download File
                     </a>
@@ -382,11 +429,13 @@ function Assistant() {
             </div>
             <button
               type="submit"
-              className={`w-full py-2 rounded-xl font-bold text-lg transition flex items-center justify-center gap-2 shadow-lg
-                ${status === 'loading'
-                  ? 'bg-blue-400 text-white cursor-not-allowed'
-                  : 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white hover:from-blue-700 hover:to-cyan-600'
-                }`}
+              className={
+                "w-full py-2 rounded-xl font-bold text-lg transition flex items-center justify-center gap-2 shadow-lg " +
+                (status === 'loading'
+                  ? 'bg-zinc-500/70 text-gray-300 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-zinc-800 to-zinc-700 text-white hover:from-zinc-900 hover:to-zinc-800'
+                )
+              }
               disabled={status === 'loading'}
             >
               {status === 'loading' ? (
@@ -399,7 +448,7 @@ function Assistant() {
                 </>
               ) : (
                 <>
-                  <i className="ri-send-plane-2-fill text-xl" />
+                  <i className="ri-send-plane-2-fill text-xl text-neutral-100" />
                   Teach
                 </>
               )}
@@ -418,6 +467,34 @@ function Assistant() {
             )}
           </form>
         </div>
+        {/* Markdown Popup */}
+        {showMarkdown && (
+          <div
+            className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100]"
+            style={{ backdropFilter: "blur(4px)" }}
+            onClick={() => setShowMarkdown(false)}
+          >
+            <div
+              className="bg-zinc-900 rounded-xl shadow-2xl p-6 border border-zinc-700 max-w-lg w-full relative"
+              style={{ minWidth: 340, minHeight: 120, maxHeight: '70vh', overflowY: 'auto' }}
+              onClick={e => e.stopPropagation()}
+            >
+              <button
+                className="absolute top-2 right-2 text-zinc-400 hover:text-white text-lg px-3 py-1"
+                onClick={() => setShowMarkdown(false)}
+                aria-label="Close Markdown Preview"
+                tabIndex={1}
+              >
+                <i className="ri-close-line" />
+              </button>
+              <div className="text-neutral-200 mb-4 font-semibold text-center text-lg flex items-center justify-center gap-2">
+                <i className="ri-eye-line" />
+                Markdown Preview
+              </div>
+              <MarkdownView markdown={formData.answer} />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
