@@ -2172,7 +2172,7 @@ const handleStartListening = () => {
             onChange={handleInputChange}
             onKeyDown={handleInputKeyDown}
             placeholder={`Ask me ${selectedCategories.length === 1 ? 'anything' : 'on this'} ${!selectedCategories.includes('all') ? ` (${selectedCategories.join(', ')})` : ''} ${selectedCategories.length === 1 ? '' : 'topics'}... (or type /code, /newcode, /math, /newmath)`}
-            className={`md:max-w-[550px] w-[65vw] md:w-80 lg:w-96 px-6 h-12 ${isDarkTheme? 'bg-zinc-100' : 'bg-zinc-300'} border border-zinc-600 dark:border-zinc-400 rounded-lg focus:outline-none focus:ring-1 focus:ring-zinc-500/20 dark:focus:ring-zinc-400/20 focus:border-zinc-100 transition-all duration-300 ${isDarkTheme ? 'text-zinc-700' : 'text-zinc-600'} placeholder-zinc-400 dark:placeholder-zinc-500 text-base shadow-md focus:shadow-zinc-400`}
+            className={`md:max-w-[550px] w-[65vw] md:w-80 lg:w-96 px-6 h-12 ${isDarkTheme? 'bg-zinc-900 border-zinc-700 outline-none' : 'bg-zinc-100 border-zinc-300 outline-zinc-400'} border rounded-lg transition-all duration-300 `}
             autoComplete="off"
           />
           
@@ -2240,7 +2240,7 @@ const handleStartListening = () => {
         <button
           type="submit"
           onClick={() => setallData(false)}
-          className={` ${isDarkTheme? 'bg-zinc-200 text-zinc-700' : 'bg-zinc-300'} size-12 flex items-center justify-center rounded-md cursor-pointer`}
+          className={` ${isDarkTheme? 'bg-zinc-900 text-zinc-200 border border-zinc-700' : 'bg-zinc-100 border border-zinc-300'} size-12 flex items-center justify-center rounded-md cursor-pointer transition-all duration-300`}
         >
           <i className={`ri-send-plane-fill text-2xl ${message.length >= 1 ? 'opacity-95 scale-100' : 'opacity-40 scale-80'} transition-all duration-300 `}></i>
         </button>
@@ -2251,7 +2251,7 @@ const handleStartListening = () => {
           ref={btnRef}
           onClick={handleStartListening}
           type="button"
-          className={`${isDarkTheme? 'bg-zinc-200 text-zinc-700' : 'bg-zinc-300'} flex items-center cursor-pointer justify-center size-12 rounded-md overflow-hidden font-semibold transition text-xl ${
+          className={`${isDarkTheme? 'bg-zinc-900 text-zinc-200 border border-zinc-700' : 'bg-zinc-100 border border-zinc-300'} flex items-center cursor-pointer justify-center size-12 rounded-md overflow-hidden font-semibold transition-all duration-300 text-xl ${
             listening ? 'va-button-primary' : ''
           }`}
           disabled={listening}
@@ -2260,7 +2260,7 @@ const handleStartListening = () => {
           {listening ? (
             <i className="ri-voice-ai-line"></i>
           ) : (
-            <i className="ri-mic-off-line font-light"></i>
+            <i className="ri-mic-off-line font-light opacity-60"></i>
           )}
         </button>
       </form>
