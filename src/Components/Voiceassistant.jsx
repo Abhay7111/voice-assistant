@@ -1758,15 +1758,15 @@ const handleStartListening = () => {
               })()}
 
               {chat.type === 'bot' && chat.matchedTag && chat.sameTagItems && chat.sameTagItems.length > 0 && (
-                <div className="mt-3 pt-3">
-                  <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                <div className="mt-3">
+                  <div className="flex items-center justify-start gap-3 flex-wrap">
                     {chat.sameTagItems.map((item, i) => (
                       <div
                         key={i}
-                        className=" text-left size-40 md:size-60 overflow-hidden rounded-2xl flex items-center justify-center"
+                        className=" text-left overflow-hidden flex items-center justify-center"
                       >
                         {!item.image && (
-                          <div className="text-xs text-cyan-400/90 font-medium mb-0.5">{item.question}</div>
+                          <div className="text-xs text-cyan-400/90 font-medium">{item.question}</div>
                         )}
                         {!item.image && (
                           <div className="text-sm text-zinc-300 markdown prose prose-invert prose-sm max-w-none">
@@ -1775,15 +1775,15 @@ const handleStartListening = () => {
                         )}
                         
                         {item.image && (
-                          <div className="mt-1 flex flex-wrap gap-1">
+                          <div className="overflow-hidden rounded-xl">
                             {(Array.isArray(item.image) ? item.image : [item.image]).filter(Boolean).map((src, j) => (
                               <a
                               href={item.link}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-md text-zinc-600 hover:underline mt-1 inline-block w-full h-full"
+                              className="text-md text-zinc-600 w-full h-full"
                             >
-                              <img key={j} src={src} alt="" className="w-full rounded object-contain opacity-80 hover:opacity-100 transition-all duration-300" />
+                              <img key={j} src={src} alt="Unable to load image" className="w-fit max-w-36 h-fit max-h-32 object-contain opacity-90 hover:opacity-100 transition-all duration-300" />
                               </a>
                             ))}
                           </div>
@@ -2156,9 +2156,8 @@ const handleStartListening = () => {
       {/* Thinking Indicator */}
 
       {thinking && (
-        <div className={` backdrop-blur-[3px] bg-zinc-600/20 text-xs border-zinc-400 border mb-2 w-fit max-w-[95%] px-3 py-1 rounded flex items-center gap-2 absolute bottom-15 left-2 z-50`}>
-          <i className="ri-loader-4-line animate-spin" />
-          <span>Thinking...</span>
+        <div className={` mb-2 size-5 rounded-full flex items-center justify-center animate-spin absolute bottom-15 left-2 z-50`}>
+          <i className="ri-loader-4-line text-lg font-bold" />
         </div>
       )}
 
