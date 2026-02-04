@@ -1750,40 +1750,43 @@ const handleStartListening = () => {
                         key={i}
                         src={src}
                         alt={`chat-img-${i + 1}`}
-                        className="rounded-2xl max-w-[80vw] md:max-w-[60vw] lg:max-w-[40vw]"
+                        className="rounded-3xl max-w-[80vw] md:max-w-[60vw] lg:max-w-[40vw] border-2 border-zinc-300 hover:border-zinc-100 transition-all duration-700"
                       />
                     ))}
                   </div>
                 ) : null;
               })()}
 
+              {/* Related data */}
+
               {chat.type === 'bot' && chat.matchedTag && chat.sameTagItems && chat.sameTagItems.length > 0 && (
-                <div className="mt-3">
-                  <div className="flex items-center justify-start gap-3 flex-wrap">
+                <div className="mt-2 flex items-center justify-start gap-1">
+                  <div className=" flex items-center relative max-w-40 w-fit h-7 pr-[13px] gap-1">
                     {chat.sameTagItems.map((item, i) => (
                       <div
                         key={i}
-                        className=" text-left overflow-hidden flex items-center justify-center"
+                        className="w-2 h-5 relative text-left flex items-center justify-center"
                       >
-                        {!item.image && (
+                        {/* {!item.image && (
                           <div className="text-xs text-cyan-400/90 font-medium">{item.question}</div>
                         )}
                         {!item.image && (
                           <div className="text-sm text-zinc-300 markdown prose prose-invert prose-sm max-w-none">
                             <Markdown>{item.answer}</Markdown>
                           </div>
-                        )}
+                        )} */}
                         
                         {item.image && (
-                          <div className="overflow-hidden rounded-xl">
+                          <div className=" border rounded-full border-zinc-100 hover:border-red-500 hover:scale-110 w-5 h-5 absolute top-0 left-0 z-0 hover:z-50 transition-all duration-300">
                             {(Array.isArray(item.image) ? item.image : [item.image]).filter(Boolean).map((src, j) => (
                               <a
                               href={item.link}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-md text-zinc-600 w-full h-full"
+                              className="text-md overflow-hidden text-zinc-600"
+                              title={item.question}
                             >
-                              <img key={j} src={src} alt="Unable to load image" className="w-fit max-w-36 h-fit max-h-32 object-contain opacity-90 hover:opacity-100 transition-all duration-300" />
+                              <img key={j} src={src} alt="Unable to load image" className="w-full h-full rounded-full object-cover opacity-90 hover:opacity-100 transition-all duration-300" />
                               </a>
                             ))}
                           </div>
@@ -1791,10 +1794,11 @@ const handleStartListening = () => {
                       </div>
                     ))}
                   </div>
+                    <p className='text-sm font-medium opacity-65'>Related to "{chat.matchedTag}"</p>
                 </div>
               )}
 
-              {/* Copy to clipboard button for assistant messages */}
+              {/* Copy to clipboard button for assistant messages ** In the  chat buttons ** */}
 
               {chat.type !== 'user' && (
                 <div id='testing' className='flex items-center w-full h-fit bg-transparent gap-2 rounded-md'>
@@ -2240,7 +2244,7 @@ const handleStartListening = () => {
         <button
           type="submit"
           onClick={() => setallData(false)}
-          className={` ${isDarkTheme? 'bg-zinc-900 text-zinc-200 border border-zinc-700' : 'bg-zinc-100 border border-zinc-300'} size-12 flex items-center justify-center rounded-md cursor-pointer transition-all duration-300`}
+          className={` ${isDarkTheme? 'bg-zinc-900 text-zinc-200 border border-zinc-700' : 'bg-zinc-100 border border-zinc-300'} size-12 flex items-center justify-center rounded-md cursor-pointer transition-all duration-300z`}
         >
           <i className={`ri-send-plane-fill text-2xl ${message.length >= 1 ? 'opacity-95 scale-100' : 'opacity-40 scale-80'} transition-all duration-300 `}></i>
         </button>
