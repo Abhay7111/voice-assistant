@@ -1794,7 +1794,6 @@ const handleStartListening = () => {
                       </div>
                     ))}
                   </div>
-                    <p className='text-sm font-medium opacity-65'>Related to "{chat.matchedTag}"</p>
                 </div>
               )}
 
@@ -1809,7 +1808,7 @@ const handleStartListening = () => {
                     <div className="h-fit w-full flex items-center justify-start gap-2 mt-1">
                       <button
                         type="button"
-                        className="w-4 bg-transparent cursor-pointer transition-all duration-300 text-zinc-600 hover:text-zinc-200"
+                        className="w-4 bg-transparent cursor-pointer transition-all duration-300 text-zinc-600 hover:text-zinc-200" 
                         title="Copy markdown to clipboard"
                         onClick={async () => {
                           if (typeof chat.text === 'string') {
