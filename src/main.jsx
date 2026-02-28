@@ -10,8 +10,8 @@ import VoiceAssistant from './Components/Voiceassistant';
 const router = createBrowserRouter([
   { path: '/', children: [
     // { path: '', element: <Home /> },
-    { path: '/train', element: <Assistant /> },
     { path: '', element: <VoiceAssistant /> },
+    { path: '/train', element: <Assistant /> },
     {path:'/testing', element:<Testing/>}
   ] },
 ]);

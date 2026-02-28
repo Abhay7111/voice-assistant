@@ -1666,8 +1666,8 @@ const handleStartListening = () => {
             Categories ({selectedCategories.length})
           </button>
 
-          <div onClick={() => setSoundOn((prev) => !prev )} className='size-7 rounded-md bg-zinc-100 hover:bg-zinc-200 cursor-pointer transition-all duration-300 flex items-center justify-center'>
-            <i className={` ${soundOn ? 'ri-volume-up-line' : 'ri-volume-mute-line'} text-lg`}></i>
+          <div onClick={() => setSoundOn((prev) => !prev )} className={`size-7 rounded-md bg-zinc-100 hover:bg-zinc-200 cursor-pointer transition-all duration-300 flex items-center justify-center ${isDarkTheme ? 'bg-zinc-700 hover:bg-zinc-600' : ''}`}>
+            <i className={` ${soundOn ? 'ri-volume-up-line text-green-500' : 'ri-volume-mute-line'} text-lg`}></i>
           </div>
         </div>
           
@@ -1676,7 +1676,7 @@ const handleStartListening = () => {
 
       {/* Chat History */}
 
-      <div className="flex flex-col gap-2 overflow-y-auto h-full mb-4 scroll-smooth relative">
+      <div className={`flex flex-col gap-2 overflow-y-auto h-full mb-4 scroll-smooth relative `}>
         {chatHistory.length === 0 && (
           <div className="absolute inset-0 va-nav-title flex items-center justify-center bg-transparent z-20 rounded-md">
             <div className='w-full h-full bg-transparent rounded-md p-2 flex flex-col items-center justify-center gap-2'>
@@ -1779,23 +1779,19 @@ const handleStartListening = () => {
                         {item.image && (
                           <div className=" border rounded-full border-zinc-100 hover:border-red-500 hover:scale-110 w-5 h-5 absolute top-0 left-0 z-0 hover:z-50 transition-all duration-300">
                             {(Array.isArray(item.image) ? item.image : [item.image]).filter(Boolean).map((src, j) => (
-                              <a
-                              href={item.link}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-md overflow-hidden text-zinc-600"
-                              title={item.question}
-                            >
-                              <img key={j} src={src} alt="Unable to load image" className="w-full h-full rounded-full object-cover opacity-90 hover:opacity-100 transition-all duration-300" />
-                              </a>
+                              <img key={j} src={src} alt="Unable to load image" title={item.question} className="w-full h-full rounded-full object-cover opacity-90 hover:opacity-100 transition-all duration-300" />
                             ))}
                           </div>
                         )}
                       </div>
                     ))}
+                  {/* {chat.type && <div className='size-full bg-green-400 pl-10 fixed z-50 opacity-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2'>
+                    {chat.matchedTag.length}
+                  </div>} */}
                   </div>
                 </div>
               )}
+
 
               {/* Copy to clipboard button for assistant messages ** In the  chat buttons ** */}
 

@@ -14,7 +14,7 @@
     --text-secondary: #425266;
     --text-link: #2563eb;
     --code-bg: #f3f3f3;
-    --code-color: #256d1b;
+    --code-color: #fffff;
     --highlight-bg: #e0e7ff;
     --border: #e0e0e0;
     --th-bg: #e0e7ef;
@@ -59,7 +59,7 @@
     --text-secondary: #bbbbbb;
     --text-link: #4fa3f7;
     --code-bg: #1e1e22;
-    --code-color: #54df50;
+    --code-color: #ffffff;
     --highlight-bg: #444444;
     --border: #444444;
     --th-bg: #27272a;
@@ -283,7 +283,7 @@ html, body, #root{
     background-color: var(--code-bg);
     border-radius: 4px;
   }
-  
+
   /* Images */
   .markdown img {
     max-width: 100%;
