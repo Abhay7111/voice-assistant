@@ -495,6 +495,9 @@ const VoiceAssistant = () => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [activeSuggestion, setActiveSuggestion] = useState(-1);
 
+  // related Popups state
+  const [openRelated, setOpenRelated] = useState(null);
+
   const apiTimeoutRef = useRef(null);
   const apiFallbackSpokenRef = useRef(false);
 
@@ -1777,7 +1780,7 @@ const handleStartListening = () => {
                         )} */}
                         
                         {item.image && (
-                          <div className=" border rounded-full border-zinc-100 hover:border-red-500 hover:scale-110 w-5 h-5 absolute top-0 left-0 z-0 hover:z-50 transition-all duration-300">
+                          <div onClick={() => setOpenRelated((prev) => !prev)} className=" border rounded-full border-zinc-100 hover:border-red-500 hover:scale-110 w-5 h-5 absolute top-0 left-0 z-0 hover:z-50 transition-all duration-300">
                             {(Array.isArray(item.image) ? item.image : [item.image]).filter(Boolean).map((src, j) => (
                               <img key={j} src={src} alt="Unable to load image" title={item.question} className="w-full h-full rounded-full object-cover opacity-90 hover:opacity-100 transition-all duration-300" />
                             ))}
@@ -1785,9 +1788,44 @@ const handleStartListening = () => {
                         )}
                       </div>
                     ))}
-                  {/* {chat.type && <div className='size-full bg-green-400 pl-10 fixed z-50 opacity-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2'>
-                    {chat.matchedTag.length}
-                  </div>} */}
+                  </div>
+                </div>
+              )}
+
+              {/* Related Popup data */}
+
+
+              { openRelated && chat.type === 'bot' && chat.matchedTag && chat.sameTagItems && chat.sameTagItems.length > 0 && (
+                <div className={`${isDarkTheme ? 'bg-zinc-900/50 border-zinc-800' : 'bg-white/70 border-zinc-200'} backdrop-blur overflow-hidden border flex items-start justify-start gap-1 p-2 fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[85vw] h-[70vh] rounded-2xl`}>
+                  <div className=" grid grid-cols-8 relative w-full gap-3">
+                    {chat.sameTagItems.map((item, i) => (
+                      <div
+                        key={i}
+                        className="relative text-left flex items-center justify-center"
+                      >
+                        {!item.image && (
+                          <div className="text-xs text-cyan-400/90 font-medium">{item.question}</div>
+                        )}
+                        {!item.image && (
+                          <div className="text-sm text-zinc-300 markdown prose prose-invert prose-sm max-w-none">
+                            <Markdown>{item.answer}</Markdown>
+                          </div>
+                        )}
+                        
+                        {item.image && (
+                          <div className={` border rounded-xl ${isDarkTheme ? 'border-zinc-800' : 'border-zinc-300 hover:border-zinc-500'} w-full h-60 overflow-hidden z-0 hover:z-50 transition-all duration-300 `}>
+                            {(Array.isArray(item.image) ? item.image : [item.image]).filter(Boolean).map((src, j) => (
+                              <div className={`p-1 ${isDarkTheme ? 'bg-zinc-800/70' : 'bg-white/50'} w-full h-full rounded-xl flex flex-col items-center justify-start gap-2`}>
+                                <div className='w-full h-[70%] overflow-hidden rounded-md'><img key={j} src={src} alt="Unable to load image" title={item.question} className="w-full h-full  hover:scale-110 rounded-md cursor-pointer object-cover opacity-90 hover:opacity-100 transition-all duration-300" /></div>
+                                <div className={`w-full min-h-10 rounded-md`}>
+                                  <div className={` ${isDarkTheme ? 'text-zinc-100' : 'text-zinc-900'} text-xs font-medium p-1 `}><h1 className='text-wrap text-lg leading-5 font-medium tracking-tight poppins line-clamp-2'>{item.question}</h1></div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
