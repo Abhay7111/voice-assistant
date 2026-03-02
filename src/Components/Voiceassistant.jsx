@@ -1152,6 +1152,7 @@ const handleStartListening = () => {
       setSuggestions([]);
       setShowSuggestions(false);
       setActiveSuggestion(-1);
+      setOpenRelated(false)
     }
   };
 
@@ -1796,21 +1797,25 @@ const handleStartListening = () => {
 
 
               { openRelated && chat.type === 'bot' && chat.matchedTag && chat.sameTagItems && chat.sameTagItems.length > 0 && (
-                <div className={`${isDarkTheme ? 'bg-zinc-900/50 border-zinc-800' : 'bg-white/70 border-zinc-200'} backdrop-blur overflow-hidden border flex items-start justify-start gap-1 p-2 fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[85vw] h-[70vh] rounded-2xl`}>
-                  <div className=" grid grid-cols-8 relative w-full gap-3">
+                <div className={`${isDarkTheme ? 'bg-zinc-900/50 border-zinc-800' : 'bg-black/10 border-zinc-200'} backdrop-blur overflow-hidden border p-2 fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 rounded-2xl`}>
+                  <div className=" grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 relative items-start gap-3 w-[85vw] h-[70vh] overflow-y-auto overflow-hidden rounded-md">
                     {chat.sameTagItems.map((item, i) => (
                       <div
                         key={i}
-                        className="relative text-left flex items-center justify-center"
+                        className=" relative text-left flex items-center justify-center"
                       >
-                        {!item.image && (
-                          <div className="text-xs text-cyan-400/90 font-medium">{item.question}</div>
-                        )}
-                        {!item.image && (
-                          <div className="text-sm text-zinc-300 markdown prose prose-invert prose-sm max-w-none">
-                            <Markdown>{item.answer}</Markdown>
-                          </div>
-                        )}
+                        {!item.image && <div className={`w-full  flex flex-col items-start justify-start gap-2 ${isDarkTheme ? 'bg-zinc-800/90' : 'bg-white/80'} rounded-lg p-2 overflow-hidden`}>
+                          {!item.image && (
+                            <div className={`text-lg ${isDarkTheme ? 'text-zinc-100/70' : 'text-zinc-900/80'} font-medium poppins line-clamp-1`}>{item.question}</div>
+                          )}
+
+                          {!item.image && (
+                            <div className={`text-sm w-full h-40 ${isDarkTheme ? 'bg-zinc-900/50' : 'bg-zinc-100/50'} p-1 rounded-md poppins text-zinc-500/90 overflow-hidden prose prose- max-w-none`}>
+                              <div className=' w-full overflow-x-auto flex gap-1'>{item.tag.map((tag, j) => <span key={j} className={`px-1 py-0.5 rounded-md text-nowrap text-sm ${isDarkTheme ? 'bg-zinc-700/50 text-zinc-200' : 'bg-zinc-200/50 text-zinc-800'}`}>{tag}</span>)}</div>
+                              <Markdown>{item.answer}</Markdown>
+                            </div>
+                          )}
+                        </div>}
                         
                         {item.image && (
                           <div className={` border rounded-xl ${isDarkTheme ? 'border-zinc-800' : 'border-zinc-300 hover:border-zinc-500'} w-full h-60 overflow-hidden z-0 hover:z-50 transition-all duration-300 `}>
