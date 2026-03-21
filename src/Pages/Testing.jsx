@@ -28,7 +28,7 @@ function Testing() {
   if (error) return <div className="text-red-500">Error: {error}</div>;
 
   return (
-    <div className="text-zinc-100">
+    <div className="text-zinc-700">
       <h2>Assistant Data - Testing</h2>
       <ul>
         {data.length === 0 && <li>No data found.</li>}
