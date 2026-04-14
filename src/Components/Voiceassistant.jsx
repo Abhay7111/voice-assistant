@@ -1,7 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import Markdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { NavLink } from 'react-router-dom';
+import Markdown_tool from './Tools/Markdown.tool';
+import { useTheme } from './Theam/Theam';
 
 const TypewriterMarkdown = ({ text, speed = 80, delay = 0 }) => {
   const [displayText, setDisplayText] = useState('');
@@ -42,7 +45,7 @@ const TypewriterMarkdown = ({ text, speed = 80, delay = 0 }) => {
 
   return (
     <div className="typewriter-markdown">
-      <Markdown>{displayText}</Markdown>
+      <Markdown remarkPlugins={[remarkGfm]}>{displayText}</Markdown>
     </div>
   );
 };
@@ -94,6 +97,55 @@ function markdownToSpeechText(markdown) {
   text = text.replace(/\s+/g, ' ').trim();
 
   return text;
+}
+
+// Helper function to copy text with double-click detection
+function handleCopyWithDetection(index, chatText, clickCountRef, clickTimeoutRef, setCopiedIndex) {
+  if (!clickCountRef.current) {
+    clickCountRef.current = {};
+  }
+  if (!clickTimeoutRef.current) {
+    clickTimeoutRef.current = {};
+  }
+
+  // Increment click count for this index
+  clickCountRef.current[index] = (clickCountRef.current[index] || 0) + 1;
+  const clickCount = clickCountRef.current[index];
+
+  // Clear existing timeout
+  if (clickTimeoutRef.current[index]) {
+    clearTimeout(clickTimeoutRef.current[index]);
+  }
+
+  // Set new timeout to detect double-click
+  clickTimeoutRef.current[index] = setTimeout(async () => {
+    const isDoubleClick = clickCount >= 2;
+    const textToCopy = isDoubleClick ? chatText : markdownToSpeechText(chatText);
+
+    try {
+      await navigator.clipboard.writeText(textToCopy);
+      setCopiedIndex(index);
+      setTimeout(() => setCopiedIndex(null), 1200);
+    } catch (err) {
+      console.error('Failed to copy text: ', err);
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = textToCopy;
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        setCopiedIndex(index);
+        setTimeout(() => setCopiedIndex(null), 1200);
+      } catch (fallbackErr) {
+        console.error('Fallback copy failed: ', fallbackErr);
+      }
+      document.body.removeChild(textArea);
+    }
+
+    // Reset click count
+    clickCountRef.current[index] = 0;
+  }, 300); // 300ms window for double-click detection
 }
 
 
@@ -508,26 +560,13 @@ const VoiceAssistant = () => {
   const [copiedIndex, setCopiedIndex] = useState(null);
   const prefetchingRef = useRef(false);
   const inputRef = useRef(null);
+  const clickCountRef = useRef({});
+  const clickTimeoutRef = useRef({});
 
   const [allData, setallData] = useState(false);
-  const [isDarkTheme, setIsDarkTheme] = useState(true);
-
-  // Toggle theme function
-  const toggleTheme = () => {
-    const newTheme = !isDarkTheme;
-    setIsDarkTheme(newTheme);
-    
-    // Toggle CSS class on document root
-    if (newTheme) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-    
-    try {
-      localStorage.setItem('isDarkTheme', newTheme.toString());
-    } catch (_) {}
-  };
+  const { isDark,toggleTheme } = useTheme();
+  
+  const [openMarkdown, setOpenMarkdown] = useState(false);
 
   // Helper: Get a preferred voice, with fallbacks
 const getVoice = () => {
@@ -616,6 +655,7 @@ const wishMe = () => {
   // Main command handler
   const takeCommand = async (msg, { fromInput = false } = {}) => {
     setListening(false);
+    setOpenMarkdown(false);
     const lowerMsg = msg.trim().toLowerCase();
     setChatHistory(prev => [...prev, { type: 'user', text: msg }]);
     setThinking(true);
@@ -632,6 +672,7 @@ const wishMe = () => {
       setChatHistory(prev => [...prev, { type: 'bot', text: salute }]);
       setGoogleSearchQuery('');
       setShowGoogleButton(false);
+      setOpenMarkdown(false);
       return;
     }
 
@@ -647,12 +688,14 @@ const wishMe = () => {
       setShowCodeCategory(false);
       setShowNewCodeForm(false);
       setallData(false);
+      setOpenMarkdown(false);
       return;
     }
 
     // Handle /code command - show code category
     if (lowerMsg === '/code') {
       setShowCodeCategory(true);
+      setOpenMarkdown(false);
       setShowNewCodeForm(false);
       setShowCategory(false);
       setShowCategoryButton(false);
@@ -674,6 +717,7 @@ const wishMe = () => {
       if (!fromInput) speak('Opening new code form.');
       setChatHistory(prev => [...prev, { type: 'bot', text: 'Opening new code form. Please fill in the question, answer, and category fields.' }]);
       setThinking(false);
+      setOpenMarkdown(false);
       return;
     }
 
@@ -688,6 +732,7 @@ const wishMe = () => {
       if (!fromInput) speak('Showing math category.');
       setChatHistory(prev => [...prev, { type: 'bot', text: 'Showing math category. Here are all the math-related questions and answers:' }]);
       setThinking(false);
+      setOpenMarkdown(false);
       return;
     }
 
@@ -702,6 +747,7 @@ const wishMe = () => {
       if (!fromInput) speak('Opening new math form.');
       setChatHistory(prev => [...prev, { type: 'bot', text: 'Opening new math form. Please fill in the math problem, solution, and category fields.' }]);
       setThinking(false);
+      setOpenMarkdown(false);
       return;
     }
 
@@ -715,28 +761,45 @@ const wishMe = () => {
       setShowCategoryButton(false);
       setChatHistory(prev => [...prev, { type: 'bot', text: 'Opening all data in the popup.' }])
       setThinking(false);
+      setOpenMarkdown(false);
       return;
     } 
+    // Handel /tools popup
+    if (lowerMsg === '/markdown editor') {
+      setOpenMarkdown(true)
+      setallData(false);
+      setShowMathForm(false);
+      setShowCodeCategory(false);
+      setShowNewCodeForm(false);
+      setShowCategory(false);
+      setShowCategoryButton(false);
+      setChatHistory(prev => [...prev, { type: 'bot', text: 'Opening all markdown editor in the popup.' }])
+      setThinking(false);
+      return;
+    } 
+    if (lowerMsg === '/close markdown') {
+      setOpenMarkdown(false);
+      setallData(false);
+      setShowMathForm(false);
+      setShowCodeCategory(false);
+      setShowNewCodeForm(false);
+      setShowCategory(false);
+      setShowCategoryButton(false);
+      setChatHistory(prev => [...prev, { type: 'bot', text: "ok I'm closing the markdown popup" }])
+      setThinking(false);
+      return;
+    }
+
     //Handle /change theme command - toggle theme
     if (lowerMsg === '/change theme') {
       toggleTheme();
       setChatHistory(prev => [
         ...prev,
-        { type: 'bot', text: `Theme changed in " ${!isDarkTheme ? 'dark' : 'light'} " mode.` }
+        { type: 'bot', text: `Theme changed in " ${!isDark ? 'dark' : 'light'} " mode.` }
       ]);
       setThinking(false);
       return;
-    } 
-    //Handle change theme command - toggle theme
-    if (lowerMsg === 'change theme') {
-      toggleTheme();
-      setChatHistory(prev => [
-        ...prev,
-        { type: 'bot', text: `Theme changed in " ${!isDarkTheme ? 'dark' : 'light'} " mode.` }
-      ]);
-      setThinking(false);
-      return;
-    } 
+    }
 
     // Handle math calculations - check API data first, then calculate if needed
     const mathResult = calculateMath(msg);
@@ -1448,10 +1511,10 @@ const handleStartListening = () => {
 
     // Load stored theme preference if available
     try {
-      const storedTheme = localStorage.getItem('isDarkTheme');
+      const storedTheme = localStorage.getItem('isDark');
       if (storedTheme !== null) {
         const isDark = storedTheme === 'true';
-        setIsDarkTheme(isDark);
+        toggleTheme(isDark);
         if (isDark) {
           document.documentElement.classList.add('dark');
         } else {
@@ -1670,7 +1733,7 @@ const handleStartListening = () => {
             Categories ({selectedCategories.length})
           </button>
 
-          <div onClick={() => setSoundOn((prev) => !prev )} className={`size-7 rounded-md bg-zinc-100 hover:bg-zinc-200 cursor-pointer transition-all duration-300 flex items-center justify-center ${isDarkTheme ? 'bg-zinc-700 hover:bg-zinc-600' : ''}`}>
+          <div onClick={() => setSoundOn((prev) => !prev )} className={`size-7 rounded-md bg-zinc-100 hover:bg-zinc-200 cursor-pointer transition-all duration-300 flex items-center justify-center ${isDark ? 'bg-zinc-700 hover:bg-zinc-600' : ''}`}>
             <i className={` ${soundOn ? 'ri-volume-up-line text-green-500' : 'ri-volume-mute-line'} text-lg`}></i>
           </div>
         </div>
@@ -1797,33 +1860,33 @@ const handleStartListening = () => {
 
 
               { openRelated && chat.type === 'bot' && chat.matchedTag && chat.sameTagItems && chat.sameTagItems.length > 0 && (
-                <div className={`${isDarkTheme ? 'bg-zinc-900/50 border-zinc-800' : 'bg-black/10 border-zinc-200'} backdrop-blur overflow-hidden border p-2 fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 rounded-2xl`}>
+                <div className={`${isDark ? 'bg-zinc-900/50 border-zinc-800' : 'bg-black/10 border-zinc-200'} backdrop-blur overflow-hidden border p-2 fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 rounded-2xl`}>
                   <div className=" grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 relative items-start gap-3 w-[85vw] h-[70vh] overflow-y-auto overflow-hidden rounded-md">
                     {chat.sameTagItems.map((item, i) => (
                       <div
                         key={i}
                         className=" relative text-left flex items-center justify-center"
                       >
-                        {!item.image && <div className={`w-full  flex flex-col items-start justify-start gap-2 ${isDarkTheme ? 'bg-zinc-800/90' : 'bg-white/80'} rounded-lg p-2 overflow-hidden`}>
+                        {!item.image && <div className={`w-full  flex flex-col items-start justify-start gap-2 ${isDark ? 'bg-zinc-800/90' : 'bg-white/80'} rounded-lg p-2 overflow-hidden`}>
                           {!item.image && (
-                            <div className={`text-lg ${isDarkTheme ? 'text-zinc-100/70' : 'text-zinc-900/80'} font-medium poppins line-clamp-1`}>{item.question}</div>
+                            <div className={`text-lg ${isDark ? 'text-zinc-100/70' : 'text-zinc-900/80'} font-medium poppins line-clamp-1`}>{item.question}</div>
                           )}
 
                           {!item.image && (
-                            <div className={`text-sm w-full h-40 ${isDarkTheme ? 'bg-zinc-900/50' : 'bg-zinc-100/50'} p-1 rounded-md poppins text-zinc-500/90 overflow-hidden prose prose- max-w-none`}>
-                              <div className=' w-full overflow-x-auto flex gap-1'>{item.tag.map((tag, j) => <span key={j} className={`px-1 py-0.5 rounded-md text-nowrap text-sm ${isDarkTheme ? 'bg-zinc-700/50 text-zinc-200' : 'bg-zinc-200/50 text-zinc-800'}`}>{tag}</span>)}</div>
+                            <div className={`text-sm w-full h-40 ${isDark ? 'bg-zinc-900/50' : 'bg-zinc-100/50'} p-1 rounded-md poppins text-zinc-500/90 overflow-hidden prose prose- max-w-none`}>
+                              <div className=' w-full overflow-x-auto flex gap-1'>{item.tag.map((tag, j) => <span key={j} className={`px-1 py-0.5 rounded-md text-nowrap text-sm ${isDark ? 'bg-zinc-700/50 text-zinc-200' : 'bg-zinc-200/50 text-zinc-800'}`}>{tag}</span>)}</div>
                               <Markdown>{item.answer}</Markdown>
                             </div>
                           )}
                         </div>}
                         
                         {item.image && (
-                          <div className={` border rounded-xl ${isDarkTheme ? 'border-zinc-800' : 'border-zinc-300 hover:border-zinc-500'} w-full h-60 overflow-hidden z-0 hover:z-50 transition-all duration-300 `}>
+                          <div className={` border rounded-xl ${isDark ? 'border-zinc-800' : 'border-zinc-300 hover:border-zinc-500'} w-full h-60 overflow-hidden z-0 hover:z-50 transition-all duration-300 `}>
                             {(Array.isArray(item.image) ? item.image : [item.image]).filter(Boolean).map((src, j) => (
-                              <div className={`p-1 ${isDarkTheme ? 'bg-zinc-800/70' : 'bg-white/50'} w-full h-full rounded-xl flex flex-col items-center justify-start gap-2`}>
+                              <div className={`p-1 ${isDark ? 'bg-zinc-800/70' : 'bg-white/50'} w-full h-full rounded-xl flex flex-col items-center justify-start gap-2`}>
                                 <div className='w-full h-[70%] overflow-hidden rounded-md'><img key={j} src={src} alt="Unable to load image" title={item.question} className="w-full h-full  hover:scale-110 rounded-md cursor-pointer object-cover opacity-90 hover:opacity-100 transition-all duration-300" /></div>
                                 <div className={`w-full min-h-10 rounded-md`}>
-                                  <div className={` ${isDarkTheme ? 'text-zinc-100' : 'text-zinc-900'} text-xs font-medium p-1 `}><h1 className='text-wrap text-lg leading-5 font-medium tracking-tight poppins line-clamp-2'>{item.question}</h1></div>
+                                  <div className={` ${isDark ? 'text-zinc-100' : 'text-zinc-900'} text-xs font-medium p-1 `}><h1 className='text-wrap text-lg leading-5 font-medium tracking-tight poppins line-clamp-2'>{item.question}</h1></div>
                                 </div>
                               </div>
                             ))}
@@ -1848,30 +1911,10 @@ const handleStartListening = () => {
                       <button
                         type="button"
                         className="w-4 bg-transparent cursor-pointer transition-all duration-300 text-zinc-600 hover:text-zinc-200" 
-                        title="Copy markdown to clipboard"
-                        onClick={async () => {
+                        title="Single click: copy text | Double click: copy markdown"
+                        onClick={() => {
                           if (typeof chat.text === 'string') {
-                            let markdownToCopy = chat.text;
-                            try {
-                              await navigator.clipboard.writeText(markdownToCopy);
-                              setCopiedIndex(index);
-                              setTimeout(() => setCopiedIndex(null), 1200);
-                            } catch (err) {
-                              console.error('Failed to copy text: ', err);
-                              // Fallback for older browsers
-                              const textArea = document.createElement('textarea');
-                              textArea.value = markdownToCopy;
-                              document.body.appendChild(textArea);
-                              textArea.select();
-                              try {
-                                document.execCommand('copy');
-                                setCopiedIndex(index);
-                                setTimeout(() => setCopiedIndex(null), 1200);
-                              } catch (fallbackErr) {
-                                console.error('Fallback copy failed: ', fallbackErr);
-                              }
-                              document.body.removeChild(textArea);
-                            }
+                            handleCopyWithDetection(index, chat.text, clickCountRef, clickTimeoutRef, setCopiedIndex);
                           }
                         }}
                       >
@@ -2214,7 +2257,7 @@ const handleStartListening = () => {
             onChange={handleInputChange}
             onKeyDown={handleInputKeyDown}
             placeholder={`Ask me ${selectedCategories.length === 1 ? 'anything' : 'on this'} ${!selectedCategories.includes('all') ? ` (${selectedCategories.join(', ')})` : ''} ${selectedCategories.length === 1 ? '' : 'topics'}... (or type /code, /newcode, /math, /newmath)`}
-            className={`md:max-w-[550px] w-[65vw] md:w-80 lg:w-96 px-6 h-12 ${isDarkTheme? 'bg-zinc-900 border-zinc-700 outline-none' : 'bg-zinc-100 border-zinc-300 outline-zinc-400'} border rounded-lg transition-all duration-300 `}
+            className={`md:max-w-[550px] w-[65vw] md:w-80 lg:w-96 px-6 h-12 ${isDark? 'bg-zinc-900 border-zinc-700 outline-none' : 'bg-zinc-100 border-zinc-300 outline-zinc-400'} border rounded-lg transition-all duration-300 `}
             autoComplete="off"
           />
           
@@ -2282,7 +2325,7 @@ const handleStartListening = () => {
         <button
           type="submit"
           onClick={() => setallData(false)}
-          className={` ${isDarkTheme? 'bg-zinc-900 text-zinc-200 border border-zinc-700' : 'bg-zinc-100 border border-zinc-300'} size-12 flex items-center justify-center rounded-md cursor-pointer transition-all duration-300z`}
+          className={` ${isDark? 'bg-zinc-900 text-zinc-200 border border-zinc-700' : 'bg-zinc-100 border border-zinc-300'} size-12 flex items-center justify-center rounded-md cursor-pointer transition-all duration-300z`}
         >
           <i className={`ri-send-plane-fill text-2xl ${message.length >= 1 ? 'opacity-95 scale-100' : 'opacity-40 scale-80'} transition-all duration-300 `}></i>
         </button>
@@ -2293,7 +2336,7 @@ const handleStartListening = () => {
           ref={btnRef}
           onClick={handleStartListening}
           type="button"
-          className={`${isDarkTheme? 'bg-zinc-900 text-zinc-200 border border-zinc-700' : 'bg-zinc-100 border border-zinc-300'} flex items-center cursor-pointer justify-center size-12 rounded-md overflow-hidden font-semibold transition-all duration-300 text-xl ${
+          className={`${isDark? 'bg-zinc-900 text-zinc-200 border border-zinc-700' : 'bg-zinc-100 border border-zinc-300'} flex items-center cursor-pointer justify-center size-12 rounded-md overflow-hidden font-semibold transition-all duration-300 text-xl ${
             listening ? 'va-button-primary' : ''
           }`}
           disabled={listening}
@@ -2395,6 +2438,15 @@ const handleStartListening = () => {
             ) : (
               <div className="va-all-data-title">No data available.</div>
             )}
+          </div>
+        )}
+
+        {openMarkdown && (
+          <div className={`w-full h-screen absolute top-0 left-0 flex items-center justify-center z-50 ${isDark? "bg-zinc-800/10" : "bg-zinc-200/10"} backdrop-blur`}>
+            <i onClick={() => setOpenMarkdown(false)} className={`ri-close-line text-xl absolute top-1 right-1 ${isDark? "bg-zinc-300 text-zinc-700" : "bg-zinc-700 text-zinc-300"} size-6 flex items-center justify-center rounded-2xl cursor-pointer hover:text-red-400 transition-all duration-300`}></i>
+            <div className={`w-[95%] h-[95%] xl:h-[83%] rounded-3xl p-3 ${isDark? "text-zinc-100 bg-zinc-800/40 border border-zinc-600" : "text-zinc-700/40 bg-zinc-100 border border-zinc-300"}`}>
+              <Markdown_tool/>
+            </div>
           </div>
         )}
     </div>
