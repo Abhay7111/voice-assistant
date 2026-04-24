@@ -568,17 +568,19 @@ const VoiceAssistant = () => {
   
   const [openMarkdown, setOpenMarkdown] = useState(false);
 
+  const [openTools, setOpenTools] = useState(false)
+
   // Helper: Get a preferred voice, with fallbacks
-const getVoice = () => {
-  const voices = window.speechSynthesis.getVoices();
+  const getVoice = () => {
+    const voices = window.speechSynthesis.getVoices();
 
-  if (!voices || voices.length === 0) {
-    // Voices not loaded yet, return null
-    return null;
-  }
+    if (!voices || voices.length === 0) {
+      // Voices not loaded yet, return null
+      return null;
+    }
 
-  // Try voices in order of preference
-  const preferredVoice =
+    // Try voices in order of preference
+    const preferredVoice =
     // 1. Google en-IN
     voices.find(v => v.lang === 'en-IN' && v.name?.toLowerCase().includes('google')) ||
     // 2. Any en-IN
@@ -1723,18 +1725,29 @@ const handleStartListening = () => {
 
           {/* Categories Button */}
 
-        <div className='flex items-center justify-end gap-0'>
+        <div className='flex items-center justify-end gap-1.5'>
           <button
             type="button"
             onClick={() => setShowCategoryButton(!showCategoryButton)}
-            className={`va-category-item ${selectedCategories.length === 1 ? 'selected' : ''} transition-all duration-300 px-2 py-0.5 text-sm cursor-pointer flex items-center gap-0.5`}
+            className={`va-category-item ${selectedCategories.length === 1 ? 'selected' : ''} ${isDark? 'bg-zinc-800 hover:bg-zinc-700' : 'bg-zinc-100 hover:bg-zinc-200'} rounded-md h-7 transition-all duration-300 px-2 py-0.5 text-sm cursor-pointer flex items-center gap-0.5`}
           >
-            <i className="ri-list-check text-lg"></i>
-            Categories ({selectedCategories.length})
+            <i className={`ri-list-check text-lg ${isDark? 'text-zinc-500' : 'text-zinc-500'}`}></i>
+            <p className={`${isDark? 'text-zinc-500' : 'text-zinc-500'}`}>({selectedCategories.length})</p>
           </button>
 
-          <div onClick={() => setSoundOn((prev) => !prev )} className={`size-7 rounded-md bg-zinc-100 hover:bg-zinc-200 cursor-pointer transition-all duration-300 flex items-center justify-center ${isDark ? 'bg-zinc-700 hover:bg-zinc-600' : ''}`}>
-            <i className={` ${soundOn ? 'ri-volume-up-line text-green-500' : 'ri-volume-mute-line'} text-lg`}></i>
+          <div onClick={() => setSoundOn((prev) => !prev )} className={`size-7 rounded-md bg-zinc-100 hover:bg-zinc-200 cursor-pointer transition-all duration-300 flex items-center justify-center ${isDark ? 'bg-zinc-800 hover:bg-zinc-700' : ''}`}>
+            <i className={` ${soundOn? 'ri-volume-up-line text-green-500' : 'ri-volume-mute-line text-zinc-500'} text-lg`}></i>
+          </div>
+          <div 
+          onClick={() => setOpenTools(!openTools)}
+          className={`size-7 rounded-md ${isDark? 'bg-zinc-800 hover:bg-zinc-700' : 'bg-zinc-100 hover:bg-zinc-200'} flex items-center justify-center p-1  transition-all duration-300 cursor-pointer `}>
+            <button
+            className={`cursor-pointer ${isDark || !openTools ? 'text-zinc-500' : 'text-zinc-600'}`}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-5">
+                <path d="M10 3.75a2 2 0 1 0-4 0 2 2 0 0 0 4 0ZM17.25 4.5a.75.75 0 0 0 0-1.5h-5.5a.75.75 0 0 0 0 1.5h5.5ZM5 3.75a.75.75 0 0 1-.75.75h-1.5a.75.75 0 0 1 0-1.5h1.5a.75.75 0 0 1 .75.75ZM4.25 17a.75.75 0 0 0 0-1.5h-1.5a.75.75 0 0 0 0 1.5h1.5ZM17.25 17a.75.75 0 0 0 0-1.5h-5.5a.75.75 0 0 0 0 1.5h5.5ZM9 10a.75.75 0 0 1-.75.75h-5.5a.75.75 0 0 1 0-1.5h5.5A.75.75 0 0 1 9 10ZM17.25 10.75a.75.75 0 0 0 0-1.5h-1.5a.75.75 0 0 0 0 1.5h1.5ZM14 10a2 2 0 1 0-4 0 2 2 0 0 0 4 0ZM10 16.25a2 2 0 1 0-4 0 2 2 0 0 0 4 0Z" />
+              </svg>
+            </button>
           </div>
         </div>
           
@@ -2440,6 +2453,30 @@ const handleStartListening = () => {
             )}
           </div>
         )}
+
+        {openTools && <div className={`w-60 h-32 transition-all duration-300 ${isDark ? 'bg-zinc-800 border-zinc-700 hover:border-zinc-600' : 'bg-zinc-100 border-zinc-200'} border rounded-xl absolute top-14 right-4 z-50 p-2`}>
+          <div className='w-full h-full flex flex-col items-start justify-start gap-2'>
+            <h1 className='text-lg font-bold'>Tools</h1>
+            <hr className={`w-full ${isDark? 'border-zinc-700' : 'border-zinc-200'}`} />
+            <div className='flex flex-col items-start justify-start gap-1 h-full overflow-auto '>
+              <button 
+              onClick={()=> setOpenMarkdown(!openMarkdown)}
+              className={`text-sm font-medium cursor-pointer hover:text-blue-500 transition-all duration-300 ${isDark? 'text-zinc-400' : 'text-zinc-500'}`}>
+                Markdown editor
+              </button>
+              <button 
+              onClick={()=> setShowMathForm(!showMathForm)}
+              className={`text-sm font-medium cursor-pointer hover:text-blue-500 transition-all duration-300 ${isDark? 'text-zinc-400' : 'text-zinc-500'}`}>
+                Add New Math Problem
+              </button>
+              <button 
+              onClick={()=> setShowNewCodeForm(!showNewCodeForm)}
+              className={`text-sm font-medium cursor-pointer hover:text-blue-500 transition-all duration-300 ${isDark? 'text-zinc-400' : 'text-zinc-500'}`}>
+                Add New Code Item
+              </button>
+            </div>
+          </div>
+        </div>}
 
         {openMarkdown && (
           <div className={`w-full h-screen absolute top-0 left-0 flex items-center justify-center z-50 ${isDark? "bg-zinc-800/10" : "bg-zinc-200/10"} backdrop-blur`}>
