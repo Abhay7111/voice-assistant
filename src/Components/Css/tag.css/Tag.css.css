@@ -1,0 +1,56 @@
+html, body {
+  font-size: 16px;
+}
+
+.main {
+  width: 100vw;
+  min-height: 100vh;
+  z-index: 1;
+  padding: 10px;
+  font-size: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: start;
+  gap: 20px;
+}
+.main button {
+  background-color: #ccd5ae;
+  color: #111111;
+  font-weight: 600;
+  padding: 2px 10px;
+  cursor: pointer;
+  border-radius: 5px;
+}
+.main .header {
+  width: 100%;
+  height: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.main .header .logo {
+  text-transform: uppercase;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+.main .options {
+  width: 100%;
+  height: 40px;
+  background-color: #ccd5ae;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+.main .options div {
+  padding: 2px 10px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  background-color: white;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.main .options div:hover {
+  background-color: #e9edc9;
+}/*# sourceMappingURL=Tag.css.css.map */

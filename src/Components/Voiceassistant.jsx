@@ -6,6 +6,9 @@ import { NavLink } from 'react-router-dom';
 import Markdown_tool from './Tools/Markdown.tool';
 import { useTheme } from './Theam/Theam';
 
+// import grain css
+import './Css/grain.css/grain.css'
+
 const TypewriterMarkdown = ({ text, speed = 80, delay = 0 }) => {
   const [displayText, setDisplayText] = useState('');
   const timeoutRef = useRef(null);
@@ -1716,6 +1719,10 @@ const handleStartListening = () => {
   if (loading) return <div className='va-loading p-4 w-full h-full flex items-center justify-center'><div className='size-10 flex items-center justify-center animate-spin bg-transparent'><i className='text-xl font-medium ri-loader-4-line'></i></div>Gathering knowledge...</div>;
   return (
     <div className="voice-assistant h-full w-full flex flex-col justify-end p-2">
+
+      {/* grain */}
+
+      <div className='grain'></div>
 
       {/* Nav */}
 

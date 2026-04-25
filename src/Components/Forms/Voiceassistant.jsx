@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
+import '../Css/grain.css/grain.css'
+import { useTheme } from '../Theam/Theam';
 
 // Use react-markdown for rendering user-entered markdown
 function MarkdownView({ markdown }) {
@@ -31,6 +33,7 @@ function Assistant() {
   const [newCategory, setNewCategory] = useState('');
   const [tagInput, setTagInput] = useState('');
   const skipCategoryReload = useRef(false);
+  const {isDark, toggleTheme} = useTheme();
 
   // Markdown preview popup state
   const [showMarkdown, setShowMarkdown] = useState(false);
@@ -214,7 +217,8 @@ function Assistant() {
 
   // Center the form absolutely in viewport using flex
   return (
-    <div className="w-full h-full min-h-screen bg-zinc-950 flex items-center justify-center">
+    <div className={`w-full h-full min-h-screen ${isDark? 'bg-[#111111]' : 'bg-[#fefae0]'} overflow-auto lg:flex lg:items-center lg:justify-center`}>
+      <div className='grain'></div>
       <div className={bwFormBg + " flex flex-col items-center justify-center"}>
         <div className="relative z-10 w-full max-w-3xl flex flex-col items-center">
           <h2 className={bwTitle}>
@@ -382,7 +386,7 @@ function Assistant() {
                 Answer<span className="text-red-500">*</span>
               </label>
               <textarea
-                className={bwInput + " min-h-[150px] max-h-[500px] resize-y"}
+                className={bwInput + ` min-h-[150px] max-h-[350px] resize-y`}
                 id="answer"
                 name="answer"
                 value={formData.answer}

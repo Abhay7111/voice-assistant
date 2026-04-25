@@ -6,12 +6,14 @@ import Home from './Pages/Home';
 import Assistant from './Components/Forms/Voiceassistant';
 import Testing from './Pages/Testing';
 import VoiceAssistant from './Components/Voiceassistant';
+import Tags from './Pages/Tags';
 
 const router = createBrowserRouter([
   { path: '/', children: [
     // { path: '', element: <Home /> },
     { path: '', element: <VoiceAssistant /> },
     { path: '/train', element: <Assistant /> },
+    {path: '/tag', element: <Tags/>},
     {path:'/testing', element:<Testing/>}
   ] },
 ]);
