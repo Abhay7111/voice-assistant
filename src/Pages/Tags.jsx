@@ -1,25 +1,34 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import '../Components/Css/tag.css/Tag.css.css';
 import '../Components/Css/grain.css/grain.css';
 import { useTheme } from '../Components/Theam/Theam';
 import Markdown from 'react-markdown';
+
+// Helper to process image URL (converts gif to png)
+const getProcessedImageUrl = (img) => {
+  if (!img) return "";
+  const src = Array.isArray(img) ? img[0] : img;
+  return typeof src === 'string' 
+    ? src.replace(/\.gif$/i, '.png') 
+    : src;
+};
+
+// Helper to highlight matching text in tags
+const highlightMatch = (text, query, isSelected) => {
+  if (!query) return text;
+  const parts = text.split(new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'));
+  return parts.map((part, i) => 
+    part.toLowerCase() === query.toLowerCase() 
+      ? <span key={i} className={isSelected ? "underline decoration-2" : "text-blue-500 font-bold"}>{part}</span> 
+      : part
+  );
+};
 
 function Tags() {
   const url = "https://server-01-v2cx.onrender.com/getassistant";
   
   const [data, setData] = useState([]);
   const [selectedTag, setSelectedTag] = useState(null);
-
-  // Helper to highlight matching text in tags
-  const highlightMatch = (text, query, isSelected) => {
-    if (!query) return text;
-    const parts = text.split(new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'));
-    return parts.map((part, i) => 
-      part.toLowerCase() === query.toLowerCase() 
-        ? <span key={i} className={isSelected ? "underline decoration-2" : "text-blue-500 font-bold"}>{part}</span> 
-        : part
-    );
-  };
 
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
@@ -38,60 +47,65 @@ function Tags() {
   }, []);
 
   // Filter data by selected category first to get relevant tags
-  const categoryFilteredData = selectedCategory === 'all'
-    ? data
-    : data.filter(item => item.category === selectedCategory);
+  const categoryFilteredData = useMemo(() => (
+    selectedCategory === 'all'
+      ? data
+      : data.filter(item => item.category === selectedCategory)
+  ), [data, selectedCategory]);
 
   // Extract and filter tags
-  const allAvailableTags = Array.from(new Set(categoryFilteredData.flatMap(item => {
-    if (!item.tag) return [];
-    return Array.isArray(item.tag) ? item.tag.filter(Boolean) : [String(item.tag)];
-  }).filter(tag => tag && tag.trim() !== '')));
+  const allAvailableTags = useMemo(() => (
+    Array.from(new Set(categoryFilteredData.flatMap(item => {
+      if (!item.tag) return [];
+      return Array.isArray(item.tag) ? item.tag.filter(Boolean) : [String(item.tag)];
+    }).filter(tag => tag && tag.trim() !== '')))
+  ), [categoryFilteredData]);
 
-  const searchedTags = allAvailableTags.filter(tag => 
-    tag.toLowerCase().includes(tagSearch.toLowerCase())
-  );
+  const searchedTags = useMemo(() => (
+    allAvailableTags.filter(tag => 
+      tag.toLowerCase().includes(tagSearch.toLowerCase())
+    )
+  ), [allAvailableTags, tagSearch]);
 
-  const tags = tagSearch 
-    ? searchedTags.slice(0, 10) 
-    : (selectedCategory === 'all' ? searchedTags.slice(0, 12) : searchedTags);
+  const tags = useMemo(() => (
+    tagSearch 
+      ? searchedTags.slice(0, 10) 
+      : (selectedCategory === 'all' ? searchedTags.slice(0, 12) : searchedTags)
+  ), [searchedTags, tagSearch, selectedCategory]);
 
-  const categories = Array.from(new Set(data.map(item => item.category).filter(Boolean)));
+  const categories = useMemo(() => (
+    Array.from(new Set(data.map(item => item.category).filter(Boolean)))
+  ), [data]);
 
   // Related tags when a tag is selected
-  const relatedTags = selectedTag 
-    ? Array.from(new Set(categoryFilteredData
-        .filter(item => (Array.isArray(item.tag) ? item.tag.includes(selectedTag) : item.tag === selectedTag))
-        .flatMap(item => Array.isArray(item.tag) ? item.tag : [item.tag])
-        .filter(t => t !== selectedTag && t)
-      )).slice(0, 6)
-    : [];
+  const relatedTags = useMemo(() => (
+    selectedTag 
+      ? Array.from(new Set(categoryFilteredData
+          .filter(item => (Array.isArray(item.tag) ? item.tag.includes(selectedTag) : item.tag === selectedTag))
+          .flatMap(item => Array.isArray(item.tag) ? item.tag : [item.tag])
+          .filter(t => t !== selectedTag && t)
+        )).slice(0, 6)
+      : []
+  ), [selectedTag, categoryFilteredData]);
 
   // Filter items based on selected tag and category
-  const filteredItems = data.filter(item => {
-    const matchesTag = !selectedTag || (
-      Array.isArray(item.tag) 
-        ? item.tag.includes(selectedTag) 
-        : item.tag === selectedTag
-    );
-    const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory;
-    return matchesTag && matchesCategory;
-  });
-
-  // Function to process image URL (converts gif to png)
-  const getProcessedImageUrl = (img) => {
-    if (!img) return "";
-    const src = Array.isArray(img) ? img[0] : img;
-    return typeof src === 'string' 
-      ? src.replace(/\.gif$/i, '.png') 
-      : src;
-  };
+  const filteredItems = useMemo(() => (
+    data.filter(item => {
+      const matchesTag = !selectedTag || (
+        Array.isArray(item.tag) 
+          ? item.tag.includes(selectedTag) 
+          : item.tag === selectedTag
+      );
+      const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory;
+      return matchesTag && matchesCategory;
+    })
+  ), [data, selectedTag, selectedCategory]);
 
   return (
     <div className={`main min-h-screen relative flex flex-col transition-colors duration-300 ${isDark ? 'bg-[#09090b] text-zinc-100' : 'bg-zinc-50 text-zinc-900'}`}>
       <div className='grain'></div>
       
-      <div className='header flex items-center justify-between p-6 backdrop-blur-md sticky z-[999999] top-0 border-b border-white/5'>
+      <div className='header flex items-center justify-between p-6 backdrop-blur-md sticky z-[99] top-0 border-b border-white/5'>
         <div className='logo text-xl font-bold tracking-tighter'>Tags<span className='text-blue-500'>Explorer</span></div>
         <div className='flex gap-2'>
             <button 
@@ -208,10 +222,10 @@ function Tags() {
 
       {/* Category Selection Popup */}
       {isCategoryModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 backdrop-blur-sm bg-black/30" onClick={() => setIsCategoryModalOpen(false)}>
-            <div className={`p-2 rounded-3xl shadow-2xl border w-full max-w-xs overflow-hidden ${isDark ? 'bg-[#18181b] border-zinc-800' : 'bg-white border-zinc-200'}`} onClick={e => e.stopPropagation()}>
+        <div className=" fixed inset-0 z-[101] flex items-center justify-center p-4 backdrop-blur-sm bg-black/30" onClick={() => setIsCategoryModalOpen(false)}>
+            <div className={`p-2 rounded-3xl shadow-2xl border w-full max-w-[800px] overflow-hidden ${isDark ? 'bg-[#18181b] border-zinc-800' : 'bg-white border-zinc-200'}`} onClick={e => e.stopPropagation()}>
                 <div className='font-bold p-4 text-center border-b border-zinc-800/50 mb-2'>Select Category</div>
-                <div className='flex flex-col p-2 max-h-80 overflow-y-auto'>
+                <div className='flex flex-col p-2 max-h-[80vh] overflow-y-auto'>
                     <button onClick={() => { setSelectedCategory('all'); setIsCategoryModalOpen(false); }} className={`text-left px-4 py-3 rounded-2xl text-sm font-medium mb-1 transition-colors ${selectedCategory === 'all' ? 'bg-blue-600 text-white' : isDark ? 'hover:bg-zinc-800' : 'hover:bg-zinc-100'}`}>All Categories</button>
                     {categories.map(cat => (
                         <button key={cat} onClick={() => { setSelectedCategory(cat); setIsCategoryModalOpen(false); }} className={`text-left px-4 py-3 rounded-2xl text-sm font-medium mb-1 transition-colors ${selectedCategory === cat ? 'bg-blue-600 text-white' : isDark ? 'hover:bg-zinc-800' : 'hover:bg-zinc-100'}`}>{cat}</button>
@@ -223,14 +237,14 @@ function Tags() {
 
       {/* Detail Popup Modal */}
       {selectedItem && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 backdrop-blur-md bg-black/50" onClick={() => setSelectedItem(null)}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 backdrop-blur-md bg-black/50" onClick={() => setSelectedItem(null)}>
           <div 
             className={`relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl shadow-2xl border ${isDark ? 'bg-zinc-900 border-zinc-800 text-zinc-100' : 'bg-white border-zinc-200 text-zinc-900'}`} 
             onClick={e => e.stopPropagation()}
           >
             <button 
               onClick={() => setSelectedItem(null)}
-              className={`absolute top-4 right-4 z-20 p-2 rounded-full transition-colors ${isDark ? 'bg-zinc-800 hover:bg-zinc-700' : 'bg-zinc-100 hover:bg-zinc-200'}`}
+              className={`absolute top-4 right-4 z-20 w-7 h-7 rounded-full transition-colors ${isDark ? 'bg-zinc-800 hover:bg-zinc-700' : 'bg-zinc-100 hover:bg-zinc-200'}`}
             >
               <i className="ri-close-line text-xl"></i>
             </button>
