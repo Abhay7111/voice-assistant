@@ -501,6 +501,15 @@ const getFinalExplanation = (result) => {
 };
 
 const VoiceAssistant = () => {
+  // Helper to process image URL (converts gif to png)
+  const getProcessedImageUrl = (img) => {
+    if (!img) return "";
+    const src = Array.isArray(img) ? img[0] : img;
+    return typeof src === 'string' 
+      ? src.replace(/\.gif$/i, '.png') 
+      : src;
+  };
+
   const [message, setMessage] = useState('');
   const [listening, setListening] = useState(false);
   const recognitionRef = useRef(null);
@@ -515,6 +524,7 @@ const VoiceAssistant = () => {
   const [userGender, setUserGender] = useState(null); // 'girl' | 'boy' | null
   const [thinking, setThinking] = useState(false);
   const hasWishedRef = useRef(false);
+  const [showImages, setShowImages] = useState(false);
   const [soundOn, setSoundOn] = useState(false);
 
   // Category state
@@ -1742,6 +1752,13 @@ const handleStartListening = () => {
             <p className={`${isDark? 'text-zinc-500' : 'text-zinc-500'}`}>({selectedCategories.length})</p>
           </button>
 
+          <div 
+            onClick={() => setShowImages((prev) => !prev)} 
+            className={`size-7 rounded-md transition-all duration-300 flex items-center justify-center cursor-pointer ${isDark ? 'bg-zinc-800 hover:bg-zinc-700' : 'bg-zinc-100 hover:bg-zinc-200'} ${showImages ? 'text-blue-500' : 'text-zinc-500'}`}
+            title={showImages ? "Hide Images" : "Show Images"}
+          >
+            <i className={`${showImages ? 'ri-image-fill' : 'ri-image-line'} text-lg`}></i>
+          </div>
           <div onClick={() => setSoundOn((prev) => !prev )} className={`size-7 rounded-md bg-zinc-100 hover:bg-zinc-200 cursor-pointer transition-all duration-300 flex items-center justify-center ${isDark ? 'bg-zinc-800 hover:bg-zinc-700' : ''}`}>
             <i className={` ${soundOn? 'ri-volume-up-line text-green-500' : 'ri-volume-mute-line text-zinc-500'} text-lg`}></i>
           </div>
@@ -1825,6 +1842,8 @@ const handleStartListening = () => {
               </div>
 
               {(() => {
+                const shouldShowImages = !selectedCategories.includes('all') || showImages;
+                if (!shouldShowImages) return null;
                 const images = Array.isArray(chat.image)
                   ? chat.image.filter(Boolean)
                   : chat.image
@@ -1835,7 +1854,7 @@ const handleStartListening = () => {
                     {images.map((src, i) => (
                       <img
                         key={i}
-                        src={src}
+                        src={getProcessedImageUrl(src)}
                         alt={`chat-img-${i + 1}`}
                         className="rounded-3xl max-w-[80vw] md:max-w-[60vw] lg:max-w-[40vw] border-2 border-zinc-300 hover:border-zinc-100 transition-all duration-700"
                       />
@@ -1848,72 +1867,75 @@ const handleStartListening = () => {
 
               {chat.type === 'bot' && chat.matchedTag && chat.sameTagItems && chat.sameTagItems.length > 0 && (
                 <div className="mt-2 flex items-center justify-start gap-1">
-                  <div className=" flex items-center relative max-w-40 w-fit h-7 pr-[13px] gap-1">
-                    {chat.sameTagItems.map((item, i) => (
-                      <div
-                        key={i}
-                        className="w-2 h-5 relative text-left flex items-center justify-center"
-                      >
-                        {/* {!item.image && (
-                          <div className="text-xs text-cyan-400/90 font-medium">{item.question}</div>
-                        )}
-                        {!item.image && (
-                          <div className="text-sm text-zinc-300 markdown prose prose-invert prose-sm max-w-none">
-                            <Markdown>{item.answer}</Markdown>
-                          </div>
-                        )} */}
-                        
-                        {item.image && (
-                          <div onClick={() => setOpenRelated((prev) => !prev)} className=" border rounded-full border-zinc-100 hover:border-red-500 hover:scale-110 w-5 h-5 absolute top-0 left-0 z-0 hover:z-50 transition-all duration-300">
-                            {(Array.isArray(item.image) ? item.image : [item.image]).filter(Boolean).map((src, j) => (
-                              <img key={j} src={src} alt="Unable to load image" title={item.question} className="w-full h-full rounded-full object-cover opacity-90 hover:opacity-100 transition-all duration-300" />
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                  {((!selectedCategories.includes('all') || showImages) && chat.sameTagItems.some(item => item.image)) ? (
+                    <div className="flex -space-x-3 overflow-hidden py-2 px-3 hover:space-x-1 transition-all duration-300">
+                      {chat.sameTagItems.filter(item => item.image).slice(0, 6).map((item, i) => (
+                        <img 
+                          key={i} 
+                          onClick={() => setOpenRelated(index)} 
+                          src={getProcessedImageUrl(item.image)} 
+                          alt="" 
+                          title={item.question} 
+                          className="inline-block h-7 w-7 rounded-full ring-2 ring-zinc-50 dark:ring-zinc-950 object-cover cursor-pointer hover:z-10 hover:scale-110 transition-all shadow-sm" 
+                        />
+                      ))}
+                      {chat.sameTagItems.filter(item => item.image).length > 6 && (
+                        <div onClick={() => setOpenRelated(index)} className="flex h-4 w-4 items-center justify-center rounded-full bg-blue-500 text-white text-[10px] font-bold ring-2 ring-white dark:ring-zinc-900 cursor-pointer z-20">
+                          +{chat.sameTagItems.filter(item => item.image).length - 6}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <button 
+                      onClick={() => setOpenRelated(index)} 
+                      className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-tight border transition-all cursor-pointer shadow-sm ${isDark ? 'bg-blue-500/10 border-blue-500/30 text-blue-400 hover:bg-blue-500/20' : 'bg-blue-50 border-blue-200 text-blue-600 hover:bg-blue-100'}`}
+                    >
+                      <i className="ri-links-line mr-1"></i>
+                      Related Topics ({chat.sameTagItems.length})
+                    </button>
+                  )}
                 </div>
               )}
 
               {/* Related Popup data */}
 
-
-              { openRelated && chat.type === 'bot' && chat.matchedTag && chat.sameTagItems && chat.sameTagItems.length > 0 && (
-                <div className={`${isDark ? 'bg-zinc-900/50 border-zinc-800' : 'bg-black/10 border-zinc-200'} backdrop-blur overflow-hidden border p-2 fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 rounded-2xl`}>
-                  <div className=" grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 relative items-start gap-3 w-[85vw] h-[70vh] overflow-y-auto overflow-hidden rounded-md">
-                    {chat.sameTagItems.map((item, i) => (
-                      <div
-                        key={i}
-                        className=" relative text-left flex items-center justify-center"
-                      >
-                        {!item.image && <div className={`w-full  flex flex-col items-start justify-start gap-2 ${isDark ? 'bg-zinc-800/90' : 'bg-white/80'} rounded-lg p-2 overflow-hidden`}>
-                          {!item.image && (
-                            <div className={`text-lg ${isDark ? 'text-zinc-100/70' : 'text-zinc-900/80'} font-medium poppins line-clamp-1`}>{item.question}</div>
-                          )}
-
-                          {!item.image && (
-                            <div className={`text-sm w-full h-40 ${isDark ? 'bg-zinc-900/50' : 'bg-zinc-100/50'} p-1 rounded-md poppins text-zinc-500/90 overflow-hidden prose prose- max-w-none`}>
-                              <div className=' w-full overflow-x-auto flex gap-1'>{item.tag.map((tag, j) => <span key={j} className={`px-1 py-0.5 rounded-md text-nowrap text-sm ${isDark ? 'bg-zinc-700/50 text-zinc-200' : 'bg-zinc-200/50 text-zinc-800'}`}>{tag}</span>)}</div>
-                              <Markdown>{item.answer}</Markdown>
+              { openRelated === index && chat.type === 'bot' && chat.matchedTag && chat.sameTagItems && chat.sameTagItems.length > 0 && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 backdrop-blur-md bg-black/40" onClick={() => setOpenRelated(null)}>
+                  <div className={`relative w-full max-w-5xl h-[80vh] overflow-hidden rounded-3xl shadow-2xl border flex flex-col ${isDark ? 'bg-[#09090b] border-zinc-800' : 'bg-white border-zinc-200'}`} onClick={e => e.stopPropagation()}>
+                    <div className="flex items-center justify-between p-6 border-b border-zinc-800/50">
+                      <h2 className="text-xl font-bold">Related to <span className="text-blue-500">#{chat.matchedTag}</span></h2>
+                      <button onClick={() => setOpenRelated(null)} className={`p-2 rounded-full transition-colors ${isDark ? 'hover:bg-zinc-800' : 'hover:bg-zinc-100'}`}><i className="ri-close-line text-2xl"></i></button>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {chat.sameTagItems.map((item, i) => (
+                        <button onClick={() => { setOpenRelated(null); takeCommand(item.question, { fromInput: true }); }} key={i} className='cursor-pointer'>
+                          <div className={`h-72 group relative flex flex-col rounded-2xl border overflow-hidden transition-all duration-300 hover:translate-y-[-4px] ${isDark ? 'bg-zinc-900/40 border-zinc-800 hover:border-zinc-700' : 'bg-zinc-50 border-zinc-200 hover:shadow-xl'}`}>
+                          {item.image && (!selectedCategories.includes('all') || showImages) && (
+                            <div className="h-40 overflow-hidden">
+                              <img src={getProcessedImageUrl(item.image)} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                             </div>
                           )}
-                        </div>}
-                        
-                        {item.image && (
-                          <div className={` border rounded-xl ${isDark ? 'border-zinc-800' : 'border-zinc-300 hover:border-zinc-500'} w-full h-60 overflow-hidden z-0 hover:z-50 transition-all duration-300 `}>
-                            {(Array.isArray(item.image) ? item.image : [item.image]).filter(Boolean).map((src, j) => (
-                              <div className={`p-1 ${isDark ? 'bg-zinc-800/70' : 'bg-white/50'} w-full h-full rounded-xl flex flex-col items-center justify-start gap-2`}>
-                                <div className='w-full h-[70%] overflow-hidden rounded-md'><img key={j} src={src} alt="Unable to load image" title={item.question} className="w-full h-full  hover:scale-110 rounded-md cursor-pointer object-cover opacity-90 hover:opacity-100 transition-all duration-300" /></div>
-                                <div className={`w-full min-h-10 rounded-md`}>
-                                  <div className={` ${isDark ? 'text-zinc-100' : 'text-zinc-900'} text-xs font-medium p-1 `}><h1 className='text-wrap text-lg leading-5 font-medium tracking-tight poppins line-clamp-2'>{item.question}</h1></div>
-                                </div>
+                            <div className="p-4 flex-1">
+                              <h3 className="font-bold text-sm mb-2 line-clamp-1 group-hover:text-blue-500 transition-colors">{item.question}</h3>
+                              <div className='flex flex-wrap gap-1 mb-2'>
+                                {(Array.isArray(item.tag) ? item.tag : [item.tag]).filter(Boolean).slice(0, 3).map((tag, j) => (
+                                  <span key={j} className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold border ${isDark ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' : 'bg-blue-50 border-blue-200 text-blue-600'}`}>
+                                    #{tag}
+                                  </span>
+                                ))}
                               </div>
-                            ))}
+                              <div className={`text-xs line-clamp-3 leading-relaxed opacity-70`}>
+                                <Markdown>{item.answer}</Markdown>
+                              </div>
+                            </div>
+                            <div className="p-4 pt-0 flex justify-between items-center">
+                             <button onClick={() => { setOpenRelated(null); takeCommand(item.question, { fromInput: true }); }} className="text-[10px] font-bold uppercase tracking-wider text-blue-500 hover:bg-blue-500/10 px-2 py-1 rounded transition-colors cursor-pointer">Ask Gamma</button>
+                             {item.category && <span className="text-[9px] uppercase font-black opacity-30">{item.category}</span>}
+                            </div>
                           </div>
-                        )}
-                      </div>
-                    ))}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}

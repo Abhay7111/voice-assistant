@@ -1,38 +1,42 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 
-const GetData = () => {
-  const Api = "https://server-01-v2cx.onrender.com/getassistant";
-  const [Data, setData] = useState([]);
-  const [Loading, setLoading] = useState(true);
-  const [Error, setError] = useState(null);
+const API_URL = "https://server-01-v2cx.onrender.com/getassistant";
+
+export const GetData = () => {
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
+    const controller = new AbortController();
+
     const fetchData = async () => {
+      setLoading(true);
       try {
-        const response = await axios.get(Api, {
+        const response = await axios.get(API_URL, {
+          signal: controller.signal,
           headers: {
             "Cache-Control": "no-cache",
-            Pragma: "no-cache",
-            Expires: "0",
           },
         });
-        if (Array.isArray(response.data) && response.data.length > 0) {
-          setData(response.data);
-        } else {
+        
+        // Ensure data is always an array
+        setData(Array.isArray(response.data) ? response.data : []);
+        setError(null);
+      } catch (err) {
+        if (!axios.isCancel(err)) {
+          setError(err.message || "Something went wrong");
           setData([]);
         }
-      } catch (err) {
-        setData([]);
-        setError(err);
       } finally {
         setLoading(false);
       }
     };
+
     fetchData();
+    return () => controller.abort(); // Cleanup on unmount
   }, []);
 
-  return { Data, Loading, Error };
+  return { data, loading, error };
 };
-
-export { GetData };

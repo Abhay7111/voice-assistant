@@ -153,6 +153,15 @@ function Assistant() {
     }
   };
 
+  // Helper to process image URL (converts gif to png)
+  const getProcessedImageUrl = (img) => {
+    if (!img) return "";
+    const src = Array.isArray(img) ? img[0] : img;
+    return typeof src === 'string' 
+      ? src.replace(/\.gif$/i, '.png') 
+      : src;
+  };
+
   const addTag = () => {
     const t = tagInput.trim();
     if (!t) return;
@@ -462,7 +471,7 @@ function Assistant() {
                 {formData.image && (
                   <div className="mt-2 flex flex-col items-start gap-2">
                     <img
-                      src={formData.image}
+                      src={getProcessedImageUrl(formData.image)}
                       alt="Preview"
                       className="size-15 object-cover rounded-lg border border-zinc-600 shadow"
                       onError={e => { e.target.onerror = null; e.target.style.display = 'none'; }}

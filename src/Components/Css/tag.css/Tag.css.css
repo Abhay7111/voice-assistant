@@ -2,55 +2,48 @@ html, body {
   font-size: 16px;
 }
 
+:root {
+  --tag-background-color: #e9edc9;
+  --tag-button-background-color: #faffd4;
+  --tag-button-hover-background-color: #dbe2af;
+}
+
+.dark {
+  --tag-background-color: #1b1b1b;
+  --tag-button-background-color: #292929;
+  --tag-button-hover-background-color: #131313;
+}
+
 .main {
-  width: 100vw;
+  width: 100%;
   min-height: 100vh;
   z-index: 1;
-  padding: 10px;
   font-size: 1rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: start;
-  gap: 20px;
 }
+
 .main button {
-  background-color: #ccd5ae;
-  color: #111111;
-  font-weight: 600;
-  padding: 2px 10px;
+  transition: all 0.2s ease;
   cursor: pointer;
-  border-radius: 5px;
 }
+
 .main .header {
-  width: 100%;
-  height: 35px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
 }
+
+.dark-mode .header {
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
 .main .header .logo {
   text-transform: uppercase;
-  font-size: 1.5rem;
-  font-weight: 600;
+  letter-spacing: 1px;
 }
+
 .main .options {
-  width: 100%;
-  height: 40px;
-  background-color: #ccd5ae;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none;  /* IE and Edge */
 }
-.main .options div {
-  padding: 2px 10px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  background-color: white;
-  border-radius: 5px;
-  cursor: pointer;
+
+.main .options::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }
-.main .options div:hover {
-  background-color: #e9edc9;
-}/*# sourceMappingURL=Tag.css.css.map */
