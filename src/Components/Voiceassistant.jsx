@@ -1752,26 +1752,8 @@ const handleStartListening = () => {
             <p className={`${isDark? 'text-zinc-500' : 'text-zinc-500'}`}>({selectedCategories.length})</p>
           </button>
 
-          <div 
-            onClick={() => setShowImages((prev) => !prev)} 
-            className={`size-7 rounded-md transition-all duration-300 flex items-center justify-center cursor-pointer ${isDark ? 'bg-zinc-800 hover:bg-zinc-700' : 'bg-zinc-100 hover:bg-zinc-200'} ${showImages ? 'text-blue-500' : 'text-zinc-500'}`}
-            title={showImages ? "Hide Images" : "Show Images"}
-          >
-            <i className={`${showImages ? 'ri-image-fill' : 'ri-image-line'} text-lg`}></i>
-          </div>
           <div onClick={() => setSoundOn((prev) => !prev )} className={`size-7 rounded-md bg-zinc-100 hover:bg-zinc-200 cursor-pointer transition-all duration-300 flex items-center justify-center ${isDark ? 'bg-zinc-800 hover:bg-zinc-700' : ''}`}>
             <i className={` ${soundOn? 'ri-volume-up-line text-green-500' : 'ri-volume-mute-line text-zinc-500'} text-lg`}></i>
-          </div>
-          <div 
-          onClick={() => setOpenTools(!openTools)}
-          className={`size-7 rounded-md ${isDark? 'bg-zinc-800 hover:bg-zinc-700' : 'bg-zinc-100 hover:bg-zinc-200'} flex items-center justify-center p-1  transition-all duration-300 cursor-pointer `}>
-            <button
-            className={`cursor-pointer ${isDark || !openTools ? 'text-zinc-500' : 'text-zinc-600'}`}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-5">
-                <path d="M10 3.75a2 2 0 1 0-4 0 2 2 0 0 0 4 0ZM17.25 4.5a.75.75 0 0 0 0-1.5h-5.5a.75.75 0 0 0 0 1.5h5.5ZM5 3.75a.75.75 0 0 1-.75.75h-1.5a.75.75 0 0 1 0-1.5h1.5a.75.75 0 0 1 .75.75ZM4.25 17a.75.75 0 0 0 0-1.5h-1.5a.75.75 0 0 0 0 1.5h1.5ZM17.25 17a.75.75 0 0 0 0-1.5h-5.5a.75.75 0 0 0 0 1.5h5.5ZM9 10a.75.75 0 0 1-.75.75h-5.5a.75.75 0 0 1 0-1.5h5.5A.75.75 0 0 1 9 10ZM17.25 10.75a.75.75 0 0 0 0-1.5h-1.5a.75.75 0 0 0 0 1.5h1.5ZM14 10a2 2 0 1 0-4 0 2 2 0 0 0 4 0ZM10 16.25a2 2 0 1 0-4 0 2 2 0 0 0 4 0Z" />
-              </svg>
-            </button>
           </div>
         </div>
           
@@ -1888,10 +1870,10 @@ const handleStartListening = () => {
                   ) : (
                     <button 
                       onClick={() => setOpenRelated(index)} 
-                      className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-tight border transition-all cursor-pointer shadow-sm ${isDark ? 'bg-blue-500/10 border-blue-500/30 text-blue-400 hover:bg-blue-500/20' : 'bg-blue-50 border-blue-200 text-blue-600 hover:bg-blue-100'}`}
+                      className={`px-3 pt-1 h-7 flex items-center justify-center rounded-full text-[10px] font-bold uppercase tracking-tight border transition-all cursor-pointer shadow-sm ${isDark ? 'bg-blue-500/10 border-blue-500/30 text-blue-400 hover:bg-blue-500/20' : 'bg-blue-50 border-blue-200 text-blue-600 hover:bg-blue-100'}`}
                     >
-                      <i className="ri-links-line mr-1"></i>
-                      Related Topics ({chat.sameTagItems.length})
+                      <span><i className="ri-links-line mr-1"></i>
+                       Related Topics ({chat.sameTagItems.length}) </span>
                     </button>
                   )}
                 </div>
@@ -2291,7 +2273,7 @@ const handleStartListening = () => {
       {/* Input & Buttons ** Form started from here ** */}
       
       <form onSubmit={handleInputSubmit} className="flex items-center justify-center gap-2 w-full relative">
-        <div className="relative "> 
+        <div className={`relative`}> 
           <input
             ref={inputRef}
             type="text"
@@ -2361,6 +2343,48 @@ const handleStartListening = () => {
 
 
         </div>
+
+
+        <button
+          // onClick={() => setOpenTools(!openTools)}
+          className={` ${isDark? 'bg-zinc-900 text-zinc-200 border border-zinc-700' : 'bg-zinc-100 border border-zinc-300'} size-12 flex items-center justify-center rounded-md ${message.length >= 1 ? "" : "cursor-pointer"} transition-all duration-300z`}
+        >
+          <i className={`ri-tools-fill text-2xl ${message.length < 1 ? 'opacity-95 scale-100' : 'opacity-40 scale-80'} transition-all duration-300 `}></i>
+        {!message.length > 0 && openTools &&
+          <div className='size-1.5 bg-zinc-500 absolute bottom-full mb-2 rounded-full'></div>}
+          { !message.length > 0 && openTools &&
+            <div className={`z-[999] mb-5 absolute bottom-full w-52 h-60 rounded-xl p-1.5 border ${isDark ? "bg-zinc-800 border-zinc-600" : "bg-zinc-200 border-zinc-400"}`}>
+              
+              <div className='w-full h-full rounded-md overflow-x-auto flex flex-col items-start justify-start gap-0.5'>
+                <button
+                  onClick={() => setShowImages(!showImages)} 
+                  className={`cursor-pointer ${isDark? "" : "text-zinc-600"} hover:opacity-80`}
+                >
+                  <span className={showImages? "text-blue-600" : ""}><i class="ri-file-image-line"></i> Show image</span>
+                </button>
+                <button
+                  onClick={()=> setOpenMarkdown(!openMarkdown)}
+                  className={`cursor-pointer ${isDark? "" : "text-zinc-600"} hover:opacity-80`}
+                >
+                  <span className={openMarkdown? "text-blue-600" : ""}><i class="ri-markdown-fill"></i> Edit markdown</span>
+                </button>
+                <button
+                  onClick={()=> setShowMathForm(!showMathForm)}
+                  className={`cursor-pointer ${isDark? "" : "text-zinc-600"} hover:opacity-80`}
+                >
+                  <span className={showMathForm? "text-blue-600" : ""}><i class="ri-square-root"></i> Teach math</span>
+                </button>
+
+                <button
+                  onClick={()=> setShowNewCodeForm(!showNewCodeForm)}
+                  className={`cursor-pointer ${isDark? "" : "text-zinc-600"} hover:opacity-80`}
+                >
+                  <span className={showNewCodeForm? "text-blue-600" : ""}><i class="ri-code-s-slash-fill"></i> Teach code</span>
+                </button>
+              </div>
+            </div>
+          }
+        </button>
 
           {/* Send Button */}
 
