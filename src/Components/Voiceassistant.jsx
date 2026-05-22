@@ -2346,7 +2346,7 @@ const handleStartListening = () => {
 
 
         <button
-          onrender={() => setOpenTools(!openTools)}
+          onClick={() => setOpenTools(!openTools)}
           className={` ${isDark? 'bg-zinc-900 text-zinc-200 border border-zinc-700' : 'bg-zinc-100 border border-zinc-300'} size-12 flex items-center justify-center rounded-md ${message.length >= 1 ? "" : "cursor-pointer"} transition-all duration-300z`}
         >
           <i className={`ri-tools-fill text-2xl ${message.length < 1 ? 'opacity-95 scale-100' : 'opacity-40 scale-80'} transition-all duration-300 `}></i>
