@@ -2346,7 +2346,7 @@ const handleStartListening = () => {
 
 
         <button
-          // onClick={() => setOpenTools(!openTools)}
+          onrender={() => setOpenTools(!openTools)}
           className={` ${isDark? 'bg-zinc-900 text-zinc-200 border border-zinc-700' : 'bg-zinc-100 border border-zinc-300'} size-12 flex items-center justify-center rounded-md ${message.length >= 1 ? "" : "cursor-pointer"} transition-all duration-300z`}
         >
           <i className={`ri-tools-fill text-2xl ${message.length < 1 ? 'opacity-95 scale-100' : 'opacity-40 scale-80'} transition-all duration-300 `}></i>
@@ -2363,20 +2363,20 @@ const handleStartListening = () => {
                   <span className={showImages? "text-blue-600" : ""}><i class="ri-file-image-line"></i> Show image</span>
                 </button>
                 <button
-                  onClick={()=> setOpenMarkdown(!openMarkdown)}
+                  onClick={()=> setOpenMarkdown(!openMarkdown) - setShowMathForm(false) - setShowNewCodeForm(false)}
                   className={`cursor-pointer ${isDark? "" : "text-zinc-600"} hover:opacity-80`}
                 >
                   <span className={openMarkdown? "text-blue-600" : ""}><i class="ri-markdown-fill"></i> Edit markdown</span>
                 </button>
                 <button
-                  onClick={()=> setShowMathForm(!showMathForm)}
+                  onClick={()=> setShowMathForm(!showMathForm) - setOpenMarkdown(false) - setShowNewCodeForm(false)}
                   className={`cursor-pointer ${isDark? "" : "text-zinc-600"} hover:opacity-80`}
                 >
                   <span className={showMathForm? "text-blue-600" : ""}><i class="ri-square-root"></i> Teach math</span>
                 </button>
 
                 <button
-                  onClick={()=> setShowNewCodeForm(!showNewCodeForm)}
+                  onClick={()=> setShowNewCodeForm(!showNewCodeForm) - setOpenMarkdown(false) - setShowMathForm(false)}
                   className={`cursor-pointer ${isDark? "" : "text-zinc-600"} hover:opacity-80`}
                 >
                   <span className={showNewCodeForm? "text-blue-600" : ""}><i class="ri-code-s-slash-fill"></i> Teach code</span>
@@ -2507,7 +2507,7 @@ const handleStartListening = () => {
           </div>
         )}
 
-        {openTools && <div className={`w-60 h-32 transition-all duration-300 ${isDark ? 'bg-zinc-800 border-zinc-700 hover:border-zinc-600' : 'bg-zinc-100 border-zinc-200'} border rounded-xl absolute top-14 right-4 z-50 p-2`}>
+        {/* {openTools && <div className={`w-60 h-32 transition-all duration-300 ${isDark ? 'bg-zinc-800 border-zinc-700 hover:border-zinc-600' : 'bg-zinc-100 border-zinc-200'} border rounded-xl absolute top-14 right-4 z-50 p-2`}>
           <div className='w-full h-full flex flex-col items-start justify-start gap-2'>
             <h1 className='text-lg font-bold'>Tools</h1>
             <hr className={`w-full ${isDark? 'border-zinc-700' : 'border-zinc-200'}`} />
@@ -2529,7 +2529,7 @@ const handleStartListening = () => {
               </button>
             </div>
           </div>
-        </div>}
+        </div>} */}
 
         {openMarkdown && (
           <div className={`w-full h-screen absolute top-0 left-0 flex items-center justify-center z-50 ${isDark? "bg-zinc-800/10" : "bg-zinc-200/10"} backdrop-blur`}>
